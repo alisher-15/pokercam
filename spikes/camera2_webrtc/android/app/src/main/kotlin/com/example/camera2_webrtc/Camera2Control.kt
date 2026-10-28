@@ -83,6 +83,9 @@ class Camera2Control(private val context: Context) {
             "android" to Build.VERSION.RELEASE,
             "sdk" to Build.VERSION.SDK_INT,
             "display" to Build.DISPLAY,
+            "hardware" to Build.HARDWARE,
+            // The Android emulator: its camera runs at a few fps, so delays there say little.
+            "emulator" to (Build.HARDWARE == "ranchu" || Build.HARDWARE == "goldfish"),
             "harmony_os" to harmonyOsVersion(),
         )
 
@@ -185,6 +188,11 @@ class Camera2Control(private val context: Context) {
                 null
             }
         if (mode == "preset" && preset !in PRESETS) throw IllegalArgumentException("unsupported_mode: preset $preset")
+        // Exposure compensation only steers auto exposure (SPEC 6.2): with manual ISO or exposure it does nothing.
+        val manualSensor = listOf("iso", "exposure").any { controls[it]?.mode == "manual" }
+        if (param == "brightness" && mode == "manual" && manualSensor) {
+            throw IllegalArgumentException("unsupported_mode: brightness needs auto ISO and exposure")
+        }
         val control = Control(mode, clamped, if (mode == "preset") preset else null)
         synchronized(this) {
             controls[param] = control
