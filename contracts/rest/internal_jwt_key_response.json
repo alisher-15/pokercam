@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InternalJwtKeyResponse",
+  "description": "GET /api/v1/internal/jwt-key (docker network only, called by media-server): the key access tokens are verified with.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "algorithm",
+    "public_key_pem"
+  ],
+  "properties": {
+    "algorithm": {
+      "const": "EdDSA"
+    },
+    "public_key_pem": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Ed25519 public key, PEM (SubjectPublicKeyInfo)."
+    }
+  }
+}

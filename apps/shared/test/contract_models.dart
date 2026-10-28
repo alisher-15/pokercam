@@ -17,6 +17,8 @@ final contractModels =
           DevicePairResponse.fromJson(json).toJson(),
       'rest/error_response.json': (json) =>
           ErrorResponse.fromJson(json).toJson(),
+      'rest/internal_jwt_key_response.json': (json) =>
+          InternalJwtKeyResponse.fromJson(json).toJson(),
       'rest/internal_license_response.json': (json) =>
           InternalLicenseResponse.fromJson(json).toJson(),
       'rest/license_response.json': (json) =>

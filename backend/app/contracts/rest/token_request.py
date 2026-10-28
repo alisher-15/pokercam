@@ -17,5 +17,5 @@ class TokenRequest(BaseModel):
     refresh_token: str = Field(..., min_length=1)
     table_id: UUID | None = None
     """
-    Viewer only: the table this access token is for (it goes into the table_id claim).
+    Viewer only: the table this access token is for (its table_id claim). Without it the token is good for the REST API only.
     """

@@ -27,7 +27,10 @@ class AccessTokenClaims(BaseModel):
     """
     role: common.Role
     client_id: UUID
-    table_id: UUID
+    table_id: UUID | None = None
+    """
+    The camera's table, or the table a viewer asked for. A viewer token without it is good for the REST API only: media-server lets nobody into a room without it.
+    """
     lic: TokenLicenseStatus = Field(..., title="TokenLicenseStatus")
     iat: int = Field(..., ge=0)
     exp: int = Field(..., ge=0)

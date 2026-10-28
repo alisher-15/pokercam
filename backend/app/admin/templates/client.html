@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block content %}
+<p><a href="/admin/clients">← {{ t('nav.clients') }}</a></p>
+<h1>{{ client.name }}</h1>
+
+<section>
+  <h2>{{ t('license.title') }}</h2>
+  <p>
+    <span class="status {{ status }}">{{ t('status.' ~ status) }}</span>
+    {{ t('license.paid_until') }}: <strong>{{ local(license.paid_until) }}</strong>
+    · {{ t('license.grace_until') }}: {{ local(grace_until) }}
+    <span class="muted">({{ timezone }})</span>
+  </p>
+  <div class="row">
+    <form method="post" action="/admin/clients/{{ client.id }}/extend" class="inline">
+      <button class="primary">{{ t('license.extend') }}</button>
+    </form>
+    <form method="post" action="/admin/clients/{{ client.id }}/paid-until" class="inline">
+      <input name="paid_until" type="date" required>
+      <button>{{ t('license.set_date') }}</button>
+    </form>
+    {% if license.suspended %}
+    <form method="post" action="/admin/clients/{{ client.id }}/resume" class="inline"><button>{{ t('license.resume') }}</button></form>
+    {% else %}
+    <form method="post" action="/admin/clients/{{ client.id }}/suspend" class="inline"><button class="danger">{{ t('license.suspend') }}</button></form>
+    {% endif %}
+  </div>
+  <p class="muted">{{ t('license.extend_hint') }}</p>
+  <form method="post" action="/admin/clients/{{ client.id }}/max-tables" class="inline">
+    <label>{{ t('license.max_tables') }} <input name="max_tables" type="number" min="0" value="{{ license.max_tables }}"></label>
+    <button>{{ t('common.save') }}</button>
+  </form>
+</section>
+
+<section>
+  <h2>{{ t('tables.title') }}</h2>
+  <table>
+    <thead><tr><th>{{ t('tables.number') }}</th><th>{{ t('tables.name') }}</th><th></th></tr></thead>
+    <tbody>
+      {% for table in tables %}
+      <tr>
+        <td>{{ table.number }}</td><td>{{ table.name }}</td>
+        <td><form method="post" action="/admin/clients/{{ client.id }}/tables/{{ table.id }}/delete" class="inline" hx-confirm="{{ t('tables.delete_confirm') }}"><button class="danger">{{ t('common.delete') }}</button></form></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="muted">{{ t('tables.none') }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if tables | length < license.max_tables %}
+  <form method="post" action="/admin/clients/{{ client.id }}/tables" class="inline">
+    <label>{{ t('tables.number') }} <input name="number" type="number" min="1" value="{{ (tables | map(attribute='number') | max) + 1 if tables else 1 }}"></label>
+    <label>{{ t('tables.name') }} <input name="name" required></label>
+    <button>{{ t('tables.add') }}</button>
+  </form>
+  {% else %}
+  <p class="muted">{{ t('tables.limit_reached') }}</p>
+  {% endif %}
+</section>
+
+<section>
+  <h2>{{ t('devices.title') }}</h2>
+  <table>
+    <thead><tr><th>{{ t('devices.model') }}</th><th>{{ t('tables.number') }}</th><th>{{ t('devices.paired_at') }}</th><th>{{ t('common.last_seen') }}</th><th></th></tr></thead>
+    <tbody>
+      {% for device in devices %}
+      <tr{% if device.revoked_at %} class="revoked"{% endif %}>
+        <td>{{ device.model }}</td>
+        <td>{% for table in tables if table.id == device.table_id %}{{ table.number }}{% endfor %}</td>
+        <td>{{ local(device.paired_at) }}</td>
+        <td>{{ local(device.last_seen_at) }}</td>
+        <td>
+          {% if device.revoked_at %}{{ t('common.revoked') }} {{ local(device.revoked_at) }}
+          {% else %}<form method="post" action="/admin/clients/{{ client.id }}/devices/{{ device.id }}/revoke" class="inline" hx-confirm="{{ t('common.revoke_confirm') }}"><button class="danger">{{ t('common.revoke') }}</button></form>{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">{{ t('devices.none') }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>{{ t('viewers.title') }}</h2>
+  <table>
+    <thead><tr><th>{{ t('viewers.name') }}</th><th>{{ t('viewers.activated_at') }}</th><th>{{ t('common.last_seen') }}</th><th></th></tr></thead>
+    <tbody>
+      {% for viewer in viewers %}
+      <tr{% if viewer.revoked_at %} class="revoked"{% endif %}>
+        <td>{{ viewer.name }}</td>
+        <td>{{ local(viewer.created_at) }}</td>
+        <td>{{ local(viewer.last_seen_at) }}</td>
+        <td>
+          {% if viewer.revoked_at %}{{ t('common.revoked') }} {{ local(viewer.revoked_at) }}
+          {% else %}<form method="post" action="/admin/clients/{{ client.id }}/viewers/{{ viewer.id }}/revoke" class="inline" hx-confirm="{{ t('common.revoke_confirm') }}"><button class="danger">{{ t('common.revoke') }}</button></form>{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="muted">{{ t('viewers.none') }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>{{ t('clients.settings') }}</h2>
+  <form method="post" action="/admin/clients/{{ client.id }}/edit" class="inline">
+    <label>{{ t('clients.name') }} <input name="name" value="{{ client.name }}" required></label>
+    <label>{{ t('clients.brand') }}
+      <select name="brand_id">{% for brand in brands %}<option value="{{ brand.id }}"{% if brand.id == client.brand_id %} selected{% endif %}>{{ brand.app_name }}</option>{% endfor %}</select>
+    </label>
+    <button>{{ t('common.save') }}</button>
+  </form>
+  <form method="post" action="/admin/clients/{{ client.id }}/reissue-key" class="inline" hx-confirm="{{ t('key.reissue_confirm') }}">
+    <button>{{ t('key.reissue') }}</button>
+  </form>
+</section>
+
+<section>
+  <h2>{{ t('audit.title') }}</h2>
+  {% include "audit_rows.html" %}
+  <p><a href="/admin/audit?client_id={{ client.id }}">{{ t('audit.all_for_client') }}</a></p>
+</section>
+{% endblock %}

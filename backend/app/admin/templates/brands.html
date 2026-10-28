@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% macro brand_form(brand=None) %}
+<form method="post" action="/admin/brands" class="inline">
+  {% if brand %}<input type="hidden" name="brand_id" value="{{ brand.id }}">{% endif %}
+  <label>{{ t('brands.app_name') }} <input name="app_name" value="{{ brand.app_name if brand else '' }}" required></label>
+  <label>{{ t('brands.android_id') }} <input name="android_application_id" value="{{ brand.android_application_id if brand else '' }}" placeholder="com.example.camera" required></label>
+  <label>{{ t('brands.logo_url') }} <input name="logo_url" value="{{ (brand.logo_url or '') if brand else '' }}"></label>
+  {% for color in ['primary', 'secondary', 'background', 'accent'] %}
+  <label>{{ t('brands.color.' ~ color) }} <input name="{{ color }}" type="color" value="{{ brand.colors[color] if brand else '#3F6E8C' }}"></label>
+  {% endfor %}
+  <button>{{ t('common.save') if brand else t('brands.create') }}</button>
+</form>
+{% endmacro %}
+{% block content %}
+<h1>{{ t('brands.title') }}</h1>
+{% for brand in brands %}
+<section>{{ brand_form(brand) }}</section>
+{% else %}
+<p class="muted">{{ t('brands.none') }}</p>
+{% endfor %}
+<h2>{{ t('brands.new') }}</h2>
+{{ brand_form() }}
+{% endblock %}

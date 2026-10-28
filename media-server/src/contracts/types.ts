@@ -12,8 +12,12 @@ export interface AccessTokenClaims {
     /**
      * device_id for a camera, viewer_id for a viewer.
      */
-    sub:      string;
-    table_id: string;
+    sub: string;
+    /**
+     * The camera's table, or the table a viewer asked for. A viewer token without it is good
+     * for the REST API only: media-server lets nobody into a room without it.
+     */
+    table_id?: string;
 }
 
 export type TokenLicenseStatus = "active" | "grace";
@@ -101,6 +105,18 @@ export interface ApiError {
 }
 
 /**
+ * GET /api/v1/internal/jwt-key (docker network only, called by media-server): the key
+ * access tokens are verified with.
+ */
+export interface InternalJwtKeyResponse {
+    algorithm: "EdDSA";
+    /**
+     * Ed25519 public key, PEM (SubjectPublicKeyInfo).
+     */
+    public_key_pem: string;
+}
+
+/**
  * GET /api/v1/internal/tables/{id}/license (docker network only, called by media-server)
  */
 export interface InternalLicenseResponse {
@@ -162,7 +178,8 @@ export interface TableInfo {
 export interface TokenRequest {
     refresh_token: string;
     /**
-     * Viewer only: the table this access token is for (it goes into the table_id claim).
+     * Viewer only: the table this access token is for (its table_id claim). Without it the
+     * token is good for the REST API only.
      */
     table_id?: string;
 }

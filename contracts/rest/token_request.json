@@ -14,7 +14,7 @@
     },
     "table_id": {
       "$ref": "../common.json#/definitions/Uuid",
-      "description": "Viewer only: the table this access token is for (it goes into the table_id claim)."
+      "description": "Viewer only: the table this access token is for (its table_id claim). Without it the token is good for the REST API only."
     }
   }
 }

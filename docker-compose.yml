@@ -24,6 +24,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    # Secrets and settings (JWT_PRIVATE_KEY, HASH_SECRET, TIMEZONE, ...) come from .env.
+    env_file:
+      - path: .env
+        required: false
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-pokercam}:${POSTGRES_PASSWORD:-pokercam}@postgres:5432/${POSTGRES_DB:-pokercam}
       LOG_LEVEL: ${LOG_LEVEL:-info}

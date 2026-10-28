@@ -31,3 +31,5 @@ Android-телефон над столом -> медиа-сервер -> до 5 
 - make codegen — типы для Dart, TS, Python из contracts/ (после любого изменения схем)
 - make l10n   — локализации из apps/shared/lib/l10n/*.arb
 - make check-generated — сгенерированное совпадает с закоммиченным (проверяет и CI)
+- make keys   — секреты для .env (в production без них backend не стартует)
+- make seed   — демо-бренд, клиент с оплаченным месяцем, 1 стол; админ из ADMIN_EMAIL / ADMIN_PASSWORD

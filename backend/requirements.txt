@@ -5,3 +5,11 @@ alembic==1.20.1
 psycopg[binary]==3.3.6
 pydantic==2.14.1
 pydantic-settings==2.16.2
+# Ed25519 access tokens (SPEC 5.2)
+pyjwt[crypto]==2.15.1
+# Admin passwords (SPEC 9.3)
+argon2-cffi==25.1.0
+# Admin pages: templates, form posts, signed session cookie
+jinja2==3.1.6
+python-multipart==0.0.32
+itsdangerous==2.2.0

@@ -10,7 +10,7 @@ PYTHON ?= python3.12
 VENV := backend/.venv
 APPS := apps/shared apps/camera_android apps/viewer_windows
 
-.PHONY: help setup setup-backend setup-node setup-apps dev down logs db \
+.PHONY: help setup setup-backend setup-node setup-apps dev down logs db keys seed \
 	test test-contracts test-backend test-media-server test-apps \
 	lint lint-backend lint-media-server lint-apps codegen l10n check-generated
 
@@ -41,6 +41,12 @@ logs: ## Follow docker compose logs
 
 db: ## Start only postgres (for backend tests)
 	docker compose up -d --wait postgres
+
+keys: ## Print fresh secrets for .env (production needs them)
+	cd backend && .venv/bin/python -m app.cli gen-keys
+
+seed: ## Demo brand, client with a paid month, one table; admin from ADMIN_EMAIL / ADMIN_PASSWORD
+	docker compose exec backend python -m app.cli seed
 
 test: db test-contracts test-backend test-media-server test-apps ## All tests of all components
 

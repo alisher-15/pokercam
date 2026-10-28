@@ -14,8 +14,8 @@
 | Этап | Состояние |
 | --- | --- |
 | 0. Фундамент | готов, ждёт приёмки |
-| 1. Спайк Camera2 | не начат: нужен реальный телефон (SPEC 13) |
-| 2. Backend | не начат |
+| 1. Спайк Camera2 | на эмуляторе работает, ждёт проверки на телефоне (ветка `stage-1/camera2-spike`) |
+| 2. Backend | готов, ждёт приёмки (ветка `stage-2/backend`) |
 | 3. Media-server | не начат |
 | 4. DVR | не начат |
 | 5. Android | не начат |
@@ -34,7 +34,10 @@ make setup     # зависимости всех компонентов
 make dev       # postgres + backend (:8000) + media-server (:3000) в docker compose
 make test      # все тесты (поднимает postgres из compose)
 make lint      # ruff, eslint + tsc, dart format + analyze
+make seed      # демо-клиент с оплаченным месяцем и 1 столом, админ из .env; печатает ключ клуба
 ```
+
+Админка: http://localhost:8000/admin (вход — `ADMIN_EMAIL` / `ADMIN_PASSWORD` из `.env`), API: http://localhost:8000/docs. Для production: `make keys >> .env` и `ENVIRONMENT=production`.
 
 После изменения схем в `contracts/` — `make codegen`, после изменения строк в `apps/shared/lib/l10n/*.arb` — `make l10n`. `make check-generated` проверяет, что сгенерированные файлы совпадают с закоммиченными (то же проверяет CI).
 

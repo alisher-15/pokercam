@@ -1,0 +1,15 @@
+<table>
+  <thead><tr><th>{{ t('audit.when') }}</th><th>{{ t('audit.actor') }}</th><th>{{ t('audit.action') }}</th><th>{{ t('audit.details') }}</th></tr></thead>
+  <tbody>
+    {% for entry in (entries if entries is defined else history) %}
+    <tr>
+      <td>{{ local(entry.created_at) }}</td>
+      <td>{{ entry.actor }}</td>
+      <td>{{ entry.action }}</td>
+      <td class="muted">{{ entry.entity }} {{ entry.entity_id or '' }} {% for key, value in entry.payload.items() %}{{ key }}={{ value }} {% endfor %}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="muted">{{ t('audit.none') }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>

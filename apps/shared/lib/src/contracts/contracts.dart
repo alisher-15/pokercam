@@ -8,6 +8,7 @@
 //     final devicePairRequest = devicePairRequestFromJson(jsonString);
 //     final devicePairResponse = devicePairResponseFromJson(jsonString);
 //     final errorResponse = errorResponseFromJson(jsonString);
+//     final internalJwtKeyResponse = internalJwtKeyResponseFromJson(jsonString);
 //     final internalLicenseResponse = internalLicenseResponseFromJson(jsonString);
 //     final licenseResponse = licenseResponseFromJson(jsonString);
 //     final pairingCodeResponse = pairingCodeResponseFromJson(jsonString);
@@ -77,6 +78,12 @@ ErrorResponse errorResponseFromJson(String str) =>
     ErrorResponse.fromJson(json.decode(str));
 
 String errorResponseToJson(ErrorResponse data) => json.encode(data.toJson());
+
+InternalJwtKeyResponse internalJwtKeyResponseFromJson(String str) =>
+    InternalJwtKeyResponse.fromJson(json.decode(str));
+
+String internalJwtKeyResponseToJson(InternalJwtKeyResponse data) =>
+    json.encode(data.toJson());
 
 InternalLicenseResponse internalLicenseResponseFromJson(String str) =>
     InternalLicenseResponse.fromJson(json.decode(str));
@@ -303,7 +310,10 @@ class AccessTokenClaims {
 
   ///device_id for a camera, viewer_id for a viewer.
   final String sub;
-  final String tableId;
+
+  ///The camera's table, or the table a viewer asked for. A viewer token without it is good
+  ///for the REST API only: media-server lets nobody into a room without it.
+  final String? tableId;
 
   AccessTokenClaims({
     required this.clientId,
@@ -312,7 +322,7 @@ class AccessTokenClaims {
     required this.lic,
     required this.role,
     required this.sub,
-    required this.tableId,
+    this.tableId,
   });
 
   factory AccessTokenClaims.fromJson(Map<String, dynamic> json) =>
@@ -526,6 +536,32 @@ class ApiError {
   Map<String, dynamic> toJson() => {"code": code, "message": message};
 }
 
+///GET /api/v1/internal/jwt-key (docker network only, called by media-server): the key
+///access tokens are verified with.
+class InternalJwtKeyResponse {
+  final Algorithm algorithm;
+
+  ///Ed25519 public key, PEM (SubjectPublicKeyInfo).
+  final String publicKeyPem;
+
+  InternalJwtKeyResponse({required this.algorithm, required this.publicKeyPem});
+
+  factory InternalJwtKeyResponse.fromJson(Map<String, dynamic> json) =>
+      InternalJwtKeyResponse(
+        algorithm: algorithmValues.map[json["algorithm"]]!,
+        publicKeyPem: json["public_key_pem"],
+      );
+
+  Map<String, dynamic> toJson() => {
+    "algorithm": algorithmValues.reverse[algorithm],
+    "public_key_pem": publicKeyPem,
+  };
+}
+
+enum Algorithm { ED_DSA }
+
+final algorithmValues = EnumValues({"EdDSA": Algorithm.ED_DSA});
+
 ///GET /api/v1/internal/tables/{id}/license (docker network only, called by media-server)
 class InternalLicenseResponse {
   final String clientId;
@@ -682,7 +718,8 @@ class TableInfo {
 class TokenRequest {
   final String refreshToken;
 
-  ///Viewer only: the table this access token is for (it goes into the table_id claim).
+  ///Viewer only: the table this access token is for (its table_id claim). Without it the
+  ///token is good for the REST API only.
   final String? tableId;
 
   TokenRequest({required this.refreshToken, this.tableId});

@@ -8,7 +8,6 @@
     "sub",
     "role",
     "client_id",
-    "table_id",
     "lic",
     "iat",
     "exp"
@@ -26,7 +25,8 @@
       "$ref": "../common.json#/definitions/Uuid"
     },
     "table_id": {
-      "$ref": "../common.json#/definitions/Uuid"
+      "$ref": "../common.json#/definitions/Uuid",
+      "description": "The camera's table, or the table a viewer asked for. A viewer token without it is good for the REST API only: media-server lets nobody into a room without it."
     },
     "lic": {
       "title": "TokenLicenseStatus",

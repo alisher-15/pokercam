@@ -185,7 +185,6 @@ export const schemas: Record<string, object> = {
       "sub",
       "role",
       "client_id",
-      "table_id",
       "lic",
       "iat",
       "exp"
@@ -203,7 +202,8 @@ export const schemas: Record<string, object> = {
         "$ref": "../common.json#/definitions/Uuid"
       },
       "table_id": {
-        "$ref": "../common.json#/definitions/Uuid"
+        "$ref": "../common.json#/definitions/Uuid",
+        "description": "The camera's table, or the table a viewer asked for. A viewer token without it is good for the REST API only: media-server lets nobody into a room without it."
       },
       "lic": {
         "title": "TokenLicenseStatus",
@@ -378,6 +378,27 @@ export const schemas: Record<string, object> = {
       }
     }
   },
+  "rest/internal_jwt_key_response.json": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "InternalJwtKeyResponse",
+    "description": "GET /api/v1/internal/jwt-key (docker network only, called by media-server): the key access tokens are verified with.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "algorithm",
+      "public_key_pem"
+    ],
+    "properties": {
+      "algorithm": {
+        "const": "EdDSA"
+      },
+      "public_key_pem": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Ed25519 public key, PEM (SubjectPublicKeyInfo)."
+      }
+    }
+  },
   "rest/internal_license_response.json": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "InternalLicenseResponse",
@@ -521,7 +542,7 @@ export const schemas: Record<string, object> = {
       },
       "table_id": {
         "$ref": "../common.json#/definitions/Uuid",
-        "description": "Viewer only: the table this access token is for (it goes into the table_id claim)."
+        "description": "Viewer only: the table this access token is for (its table_id claim). Without it the token is good for the REST API only."
       }
     }
   },

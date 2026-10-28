@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ t('login.title') }}</h1>
+<form method="post" action="/admin/login" class="stack narrow">
+  <label>{{ t('login.email') }} <input name="email" type="email" autocomplete="username" required></label>
+  <label>{{ t('login.password') }} <input name="password" type="password" autocomplete="current-password" required></label>
+  <button class="primary">{{ t('login.submit') }}</button>
+</form>
+{% endblock %}

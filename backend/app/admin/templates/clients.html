@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ t('clients.title') }}</h1>
+<table>
+  <thead>
+    <tr><th>{{ t('clients.name') }}</th><th>{{ t('clients.brand') }}</th><th>{{ t('license.status') }}</th><th>{{ t('license.paid_until') }}</th><th>{{ t('clients.tables') }}</th></tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td><a href="/admin/clients/{{ row.client.id }}">{{ row.client.name }}</a></td>
+      <td>{{ row.client.brand.app_name }}</td>
+      <td><span class="status {{ row.status }}">{{ t('status.' ~ row.status) }}</span></td>
+      <td>{{ local(row.paid_until) }}</td>
+      <td>{{ row.tables }} / {{ row.max_tables }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="muted">{{ t('clients.none') }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>{{ t('clients.new') }}</h2>
+{% if brands %}
+<form method="post" action="/admin/clients" class="stack narrow">
+  <label>{{ t('clients.name') }} <input name="name" required></label>
+  <label>{{ t('clients.brand') }}
+    <select name="brand_id">{% for brand in brands %}<option value="{{ brand.id }}">{{ brand.app_name }}</option>{% endfor %}</select>
+  </label>
+  <label>{{ t('license.max_tables') }} <input name="max_tables" type="number" min="0" value="1"></label>
+  <label class="check"><input name="paid" type="checkbox" value="true" checked> {{ t('clients.first_month_paid') }}</label>
+  <button class="primary">{{ t('clients.create') }}</button>
+</form>
+{% else %}
+<p>{{ t('clients.need_brand') }} <a href="/admin/brands">{{ t('nav.brands') }}</a></p>
+{% endif %}
+{% endblock %}
