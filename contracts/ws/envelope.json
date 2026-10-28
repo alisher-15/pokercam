@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Envelope",
+  "description": "Every WebSocket message. Receivers check the envelope first, then the schema of its type.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "type": "string",
+      "pattern": "^[a-z_]+(\\.[a-z_]+)+$"
+    },
+    "id": {
+      "$ref": "../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "type": "object"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "detail": {
+    "code": "pairing_code_expired",
+    "message": "Pairing code has expired"
+  }
+}

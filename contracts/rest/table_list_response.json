@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TableListResponse",
+  "description": "GET /api/v1/tables",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tables"
+  ],
+  "properties": {
+    "tables": {
+      "type": "array",
+      "items": {
+        "title": "TableInfo",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "number",
+          "camera_online"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "../common.json#/definitions/Uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "camera_online": {
+            "type": "boolean"
+          },
+          "camera_last_seen_at": {
+            "$ref": "../common.json#/definitions/DateTime"
+          }
+        }
+      }
+    }
+  }
+}

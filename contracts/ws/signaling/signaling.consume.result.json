@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SignalingConsumeResultMessage",
+  "description": "Server -> sender of signaling.consume: success. Failures come as signaling.error.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "signaling.consume.result"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "SignalingConsumeResultPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "consumer_id",
+        "producer_id",
+        "kind",
+        "rtp_parameters"
+      ],
+      "properties": {
+        "request_id": {
+          "$ref": "../../common.json#/definitions/MessageId"
+        },
+        "consumer_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "mediasoup object id."
+        },
+        "producer_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "mediasoup object id."
+        },
+        "kind": {
+          "$ref": "../../common.json#/definitions/MediaKind"
+        },
+        "rtp_parameters": {
+          "type": "object",
+          "description": "mediasoup RtpParameters."
+        }
+      }
+    }
+  }
+}

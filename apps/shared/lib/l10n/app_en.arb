@@ -1,0 +1,15 @@
+{
+  "@@locale": "en",
+  "cameraAppTitle": "Table camera",
+  "@cameraAppTitle": {
+    "description": "Title of the camera app (Android phone above the table)."
+  },
+  "viewerAppTitle": "Table viewer",
+  "@viewerAppTitle": {
+    "description": "Title of the Windows viewer app."
+  },
+  "underConstruction": "This screen is under construction.",
+  "@underConstruction": {
+    "description": "Placeholder until the app's screens are built (stages 5-7)."
+  }
+}

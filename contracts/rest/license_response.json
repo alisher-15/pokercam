@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LicenseResponse",
+  "description": "GET /api/v1/license",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "paid_until",
+    "grace_until"
+  ],
+  "properties": {
+    "status": {
+      "$ref": "../common.json#/definitions/LicenseStatus"
+    },
+    "paid_until": {
+      "$ref": "../common.json#/definitions/DateTime"
+    },
+    "grace_until": {
+      "$ref": "../common.json#/definitions/DateTime",
+      "description": "paid_until + 3 days."
+    }
+  }
+}

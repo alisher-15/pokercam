@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CameraAckMessage",
+  "description": "Camera -> the viewer that sent camera.set: whether it was applied.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "camera.ack"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "CameraAckPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "ok"
+      ],
+      "properties": {
+        "request_id": {
+          "$ref": "../../common.json#/definitions/MessageId"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "applied": {
+          "$ref": "../../common.json#/definitions/CameraControl"
+        },
+        "error": {
+          "title": "CameraErrorCode",
+          "type": "string",
+          "enum": [
+            "unsupported_param",
+            "unsupported_mode",
+            "out_of_range",
+            "camera_unavailable",
+            "internal"
+          ]
+        }
+      }
+    }
+  }
+}

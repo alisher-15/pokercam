@@ -1,0 +1,17 @@
+{
+  "tables": [
+    {
+      "id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+      "name": "Стол 1",
+      "number": 1,
+      "camera_online": true,
+      "camera_last_seen_at": "2026-10-28T11:00:00Z"
+    },
+    {
+      "id": "0b5e9c7a-1d2f-4e3a-8c6b-9f0a1e2d3c4b",
+      "name": "Стол 2",
+      "number": 2,
+      "camera_online": false
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "type": "camera.state",
+  "id": "m-0004",
+  "ts": 1793180000004,
+  "table_id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+  "payload": {
+    "controls": {
+      "focus": {
+        "mode": "manual",
+        "value": 2.5
+      },
+      "iso": {
+        "mode": "manual",
+        "value": 400
+      },
+      "white_balance": {
+        "mode": "preset",
+        "preset": "daylight"
+      }
+    },
+    "last_changed_by": {
+      "role": "viewer",
+      "id": "8d4b1f6e-3a2c-4d9f-a7e5-1c6b0e9f2d74",
+      "name": "Пит-босс 1"
+    },
+    "last_changed_at": 1793180000003
+  }
+}

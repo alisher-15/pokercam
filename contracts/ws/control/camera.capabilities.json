@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CameraCapabilitiesMessage",
+  "description": "Camera -> viewers: what each parameter supports. Sent on join and whenever it changes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "camera.capabilities"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "CameraCapabilitiesPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "params"
+      ],
+      "properties": {
+        "params": {
+          "title": "CameraParamCapabilities",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "focus",
+            "iso",
+            "exposure",
+            "brightness",
+            "contrast",
+            "white_balance",
+            "zoom"
+          ],
+          "properties": {
+            "focus": {
+              "$ref": "#/definitions/ParamCapability"
+            },
+            "iso": {
+              "$ref": "#/definitions/ParamCapability"
+            },
+            "exposure": {
+              "$ref": "#/definitions/ParamCapability"
+            },
+            "brightness": {
+              "$ref": "#/definitions/ParamCapability"
+            },
+            "contrast": {
+              "$ref": "#/definitions/ParamCapability"
+            },
+            "white_balance": {
+              "$ref": "#/definitions/ParamCapability"
+            },
+            "zoom": {
+              "$ref": "#/definitions/ParamCapability"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "ParamCapability": {
+      "title": "ParamCapability",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "supported",
+        "modes",
+        "presets"
+      ],
+      "properties": {
+        "supported": {
+          "type": "boolean"
+        },
+        "modes": {
+          "type": "array",
+          "items": {
+            "$ref": "../../common.json#/definitions/ControlMode"
+          },
+          "uniqueItems": true,
+          "description": "Empty when not supported."
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "step": {
+          "type": "number"
+        },
+        "presets": {
+          "type": "array",
+          "items": {
+            "$ref": "../../common.json#/definitions/WhiteBalancePreset"
+          },
+          "uniqueItems": true,
+          "description": "white_balance only; empty otherwise."
+        },
+        "current": {
+          "$ref": "../../common.json#/definitions/CameraControl"
+        },
+        "default": {
+          "$ref": "../../common.json#/definitions/CameraControl"
+        }
+      }
+    }
+  }
+}

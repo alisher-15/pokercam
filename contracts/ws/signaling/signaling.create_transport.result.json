@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SignalingCreateTransportResultMessage",
+  "description": "Server -> sender of signaling.create_transport: success. Failures come as signaling.error.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "signaling.create_transport.result"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "SignalingCreateTransportResultPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "transport_id",
+        "ice_parameters",
+        "ice_candidates",
+        "dtls_parameters",
+        "ice_servers"
+      ],
+      "properties": {
+        "request_id": {
+          "$ref": "../../common.json#/definitions/MessageId"
+        },
+        "transport_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "mediasoup object id."
+        },
+        "ice_parameters": {
+          "type": "object",
+          "description": "mediasoup IceParameters."
+        },
+        "ice_candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "description": "mediasoup IceCandidate."
+          }
+        },
+        "dtls_parameters": {
+          "type": "object",
+          "description": "mediasoup DtlsParameters."
+        },
+        "ice_servers": {
+          "type": "array",
+          "description": "STUN/TURN servers for the client; empty when none are configured.",
+          "items": {
+            "title": "IceServer",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "urls"
+            ],
+            "properties": {
+              "urls": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "username": {
+                "type": "string"
+              },
+              "credential": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

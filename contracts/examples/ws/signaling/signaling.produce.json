@@ -1,0 +1,18 @@
+{
+  "type": "signaling.produce",
+  "id": "m-0019",
+  "ts": 1793180000019,
+  "table_id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+  "payload": {
+    "transport_id": "t-2",
+    "kind": "video",
+    "rtp_parameters": {
+      "codecs": [],
+      "encodings": [
+        {
+          "maxBitrate": 4000000
+        }
+      ]
+    }
+  }
+}

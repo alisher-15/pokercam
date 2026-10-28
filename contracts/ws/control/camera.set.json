@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CameraSetMessage",
+  "description": "Viewer -> camera: change one parameter. When several viewers change the same parameter, the last one wins.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "camera.set"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "CameraSetPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "param",
+        "control"
+      ],
+      "properties": {
+        "param": {
+          "$ref": "../../common.json#/definitions/CameraParam"
+        },
+        "control": {
+          "$ref": "../../common.json#/definitions/CameraControl"
+        }
+      }
+    }
+  }
+}

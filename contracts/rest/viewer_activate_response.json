@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ViewerActivateResponse",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "refresh_token",
+    "viewer_id",
+    "client_id"
+  ],
+  "properties": {
+    "refresh_token": {
+      "type": "string",
+      "minLength": 1
+    },
+    "viewer_id": {
+      "$ref": "../common.json#/definitions/Uuid"
+    },
+    "client_id": {
+      "$ref": "../common.json#/definitions/Uuid"
+    }
+  }
+}

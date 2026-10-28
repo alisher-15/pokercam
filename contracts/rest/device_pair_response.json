@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DevicePairResponse",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "refresh_token",
+    "device_id",
+    "table_id",
+    "client_id"
+  ],
+  "properties": {
+    "refresh_token": {
+      "type": "string",
+      "minLength": 1
+    },
+    "device_id": {
+      "$ref": "../common.json#/definitions/Uuid"
+    },
+    "table_id": {
+      "$ref": "../common.json#/definitions/Uuid"
+    },
+    "client_id": {
+      "$ref": "../common.json#/definitions/Uuid"
+    }
+  }
+}

@@ -1,0 +1,24 @@
+name: shared
+description: "Shared code of the camera and viewer apps: contracts, wire format, localization, brand theme."
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ^3.13.7
+  flutter: ">=3.47.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+
+dev_dependencies:
+  collection: any
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  generate: true

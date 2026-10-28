@@ -1,0 +1,9 @@
+{
+  "type": "signaling.resume",
+  "id": "m-0023",
+  "ts": 1793180000023,
+  "table_id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+  "payload": {
+    "consumer_id": "c-1"
+  }
+}

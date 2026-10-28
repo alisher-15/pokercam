@@ -1,0 +1,13 @@
+{
+  "app_name": "Demo Cam",
+  "android_application_id": "com.example.democam.camera",
+  "windows_app_id": "com.example.democam.viewer",
+  "colors": {
+    "primary": "#0F5132",
+    "secondary": "#1B1F24",
+    "background": "#101418",
+    "accent": "#E0B341"
+  },
+  "logo": "logo.png",
+  "icon": "icon.png"
+}

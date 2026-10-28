@@ -1,0 +1,10 @@
+{
+  "app_name": "Demo Cam",
+  "logo_url": "/static/brand/logo.png",
+  "colors": {
+    "primary": "#0F5132",
+    "secondary": "#1B1F24",
+    "background": "#101418",
+    "accent": "#E0B341"
+  }
+}

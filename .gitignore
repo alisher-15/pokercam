@@ -2,3 +2,16 @@
 .DS_Store
 .idea/
 .vscode/
+*.iml
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+
+# Flutter: each app's own .gitignore covers .dart_tool/ and build/

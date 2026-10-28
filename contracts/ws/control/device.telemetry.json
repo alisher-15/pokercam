@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DeviceTelemetryMessage",
+  "description": "Camera -> viewers, every 5 s.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "device.telemetry"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "DeviceTelemetryPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "battery_pct",
+        "charging",
+        "temp_c",
+        "thermal_status",
+        "network",
+        "stream"
+      ],
+      "properties": {
+        "battery_pct": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "charging": {
+          "type": "boolean"
+        },
+        "temp_c": {
+          "type": "number",
+          "description": "Battery temperature."
+        },
+        "thermal_status": {
+          "title": "ThermalStatus",
+          "type": "string",
+          "enum": [
+            "none",
+            "light",
+            "moderate",
+            "severe",
+            "critical",
+            "emergency",
+            "shutdown"
+          ],
+          "description": "Android PowerManager thermal status."
+        },
+        "network": {
+          "title": "NetworkInfo",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "title": "NetworkType",
+              "type": "string",
+              "enum": [
+                "wifi",
+                "cellular",
+                "ethernet",
+                "none"
+              ]
+            },
+            "rssi": {
+              "type": "integer",
+              "description": "Signal strength, dBm."
+            },
+            "rtt_ms": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "uplink_kbps": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "stream": {
+          "title": "StreamStats",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "bitrate_kbps",
+            "fps",
+            "dropped_frames"
+          ],
+          "properties": {
+            "bitrate_kbps": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "fps": {
+              "type": "number",
+              "minimum": 0
+            },
+            "dropped_frames": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  }
+}

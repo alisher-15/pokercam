@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SignalingErrorMessage",
+  "description": "Server -> sender of a signaling request: it failed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "signaling.error"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "SignalingErrorPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "code"
+      ],
+      "properties": {
+        "request_id": {
+          "$ref": "../../common.json#/definitions/MessageId"
+        },
+        "code": {
+          "title": "SignalingErrorCode",
+          "type": "string",
+          "enum": [
+            "unauthorized",
+            "forbidden",
+            "room_full",
+            "license_blocked",
+            "not_found",
+            "bad_request",
+            "internal"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "description": "For logs, not for users: clients show a localized text by code."
+        }
+      }
+    }
+  }
+}

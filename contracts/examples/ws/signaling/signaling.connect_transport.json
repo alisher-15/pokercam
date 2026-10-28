@@ -1,0 +1,18 @@
+{
+  "type": "signaling.connect_transport",
+  "id": "m-0017",
+  "ts": 1793180000017,
+  "table_id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+  "payload": {
+    "transport_id": "t-1",
+    "dtls_parameters": {
+      "role": "client",
+      "fingerprints": [
+        {
+          "algorithm": "sha-256",
+          "value": "EF:01"
+        }
+      ]
+    }
+  }
+}

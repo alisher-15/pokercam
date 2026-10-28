@@ -1,0 +1,21 @@
+name: camera_android
+description: "Table camera: streams the table to the media server."
+publish_to: none
+version: 0.0.1+1
+
+environment:
+  sdk: ^3.13.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shared:
+    path: ../shared
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

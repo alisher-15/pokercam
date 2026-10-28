@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TokenRequest",
+  "description": "POST /api/v1/auth/token",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "refresh_token"
+  ],
+  "properties": {
+    "refresh_token": {
+      "type": "string",
+      "minLength": 1
+    },
+    "table_id": {
+      "$ref": "../common.json#/definitions/Uuid",
+      "description": "Viewer only: the table this access token is for (it goes into the table_id claim)."
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SignalingConnectTransportMessage",
+  "description": "Client -> server: DTLS parameters from the transport's connect event.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "signaling.connect_transport"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "SignalingConnectTransportPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transport_id",
+        "dtls_parameters"
+      ],
+      "properties": {
+        "transport_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "mediasoup object id."
+        },
+        "dtls_parameters": {
+          "type": "object",
+          "description": "mediasoup DtlsParameters."
+        }
+      }
+    }
+  }
+}

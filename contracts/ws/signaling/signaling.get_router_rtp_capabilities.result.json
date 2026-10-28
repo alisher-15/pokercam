@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SignalingGetRouterRtpCapabilitiesResultMessage",
+  "description": "Server -> sender of signaling.get_router_rtp_capabilities: success. Failures come as signaling.error.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "signaling.get_router_rtp_capabilities.result"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "SignalingGetRouterRtpCapabilitiesResultPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "rtp_capabilities"
+      ],
+      "properties": {
+        "request_id": {
+          "$ref": "../../common.json#/definitions/MessageId"
+        },
+        "rtp_capabilities": {
+          "type": "object",
+          "description": "mediasoup RtpCapabilities, passed to Device.load() as is."
+        }
+      }
+    }
+  }
+}

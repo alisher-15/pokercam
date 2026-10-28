@@ -1,0 +1,13 @@
+{
+  "type": "camera.set",
+  "id": "m-0002",
+  "ts": 1793180000002,
+  "table_id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+  "payload": {
+    "param": "iso",
+    "control": {
+      "mode": "manual",
+      "value": 400
+    }
+  }
+}

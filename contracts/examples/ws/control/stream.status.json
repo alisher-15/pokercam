@@ -1,0 +1,10 @@
+{
+  "type": "stream.status",
+  "id": "m-0007",
+  "ts": 1793180000007,
+  "table_id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+  "payload": {
+    "status": "live",
+    "since": 1793179940000
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "type": "signaling.join",
+  "id": "m-0011",
+  "ts": 1793180000011,
+  "table_id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+  "payload": {
+    "token": "eyJhbGciOiJFZERTQSJ9.e30.c2ln"
+  }
+}

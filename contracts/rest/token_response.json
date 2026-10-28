@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TokenResponse",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "access_token",
+    "token_type",
+    "expires_in"
+  ],
+  "properties": {
+    "access_token": {
+      "type": "string",
+      "minLength": 1
+    },
+    "token_type": {
+      "const": "bearer"
+    },
+    "expires_in": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Seconds."
+    }
+  }
+}

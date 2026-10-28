@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BrandResponse",
+  "description": "GET /api/v1/brand",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "app_name",
+    "colors"
+  ],
+  "properties": {
+    "app_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50
+    },
+    "logo_url": {
+      "type": "string",
+      "minLength": 1
+    },
+    "colors": {
+      "$ref": "../common.json#/definitions/BrandColors"
+    }
+  }
+}

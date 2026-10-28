@@ -1,0 +1,23 @@
+{
+  "type": "signaling.get_router_rtp_capabilities.result",
+  "id": "m-0014",
+  "ts": 1793180000014,
+  "table_id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+  "payload": {
+    "request_id": "m-0013",
+    "rtp_capabilities": {
+      "codecs": [
+        {
+          "kind": "video",
+          "mimeType": "video/H264",
+          "clockRate": 90000,
+          "parameters": {
+            "packetization-mode": 1,
+            "profile-level-id": "42e01f"
+          }
+        }
+      ],
+      "headerExtensions": []
+    }
+  }
+}

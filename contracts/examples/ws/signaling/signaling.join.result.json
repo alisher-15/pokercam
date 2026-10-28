@@ -1,0 +1,12 @@
+{
+  "type": "signaling.join.result",
+  "id": "m-0012",
+  "ts": 1793180000012,
+  "table_id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+  "payload": {
+    "request_id": "m-0011",
+    "role": "viewer",
+    "peer_id": "peer-7",
+    "session_id": "s-20261028-0001"
+  }
+}

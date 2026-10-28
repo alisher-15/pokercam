@@ -1,0 +1,151 @@
+# SPEC 11.2: lint + unit + contracts on every push; integration (and app builds) on PRs into main.
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: "3.47.8"
+  NODE_VERSION: "24"
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  contracts:
+    name: Contracts and generated code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            contracts/package-lock.json
+            media-server/package-lock.json
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: make setup-backend setup-node PYTHON=python
+      - run: cd apps/shared && flutter pub get
+      - run: make test-contracts
+      - name: Generated code matches contracts/ and the ARB files
+        run: make check-generated
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pokercam
+          POSTGRES_PASSWORD: pokercam
+          POSTGRES_DB: pokercam_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U pokercam"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - run: make setup-backend PYTHON=python
+      - run: make lint-backend
+      - run: make test-backend
+
+  media-server:
+    name: Media-server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: media-server/package-lock.json
+      - run: cd media-server && npm ci --no-audit --no-fund
+      - run: make lint-media-server
+      - run: make test-media-server
+      - run: cd media-server && npm run build
+
+  apps:
+    name: Flutter apps
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: make setup-apps
+      - run: make lint-apps
+      - run: make test-apps
+
+  build-android:
+    name: Build Android APK
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
+    needs: apps
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter build apk --debug
+        working-directory: apps/camera_android
+
+  build-windows:
+    name: Build Windows app
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
+    needs: apps
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter build windows --debug
+        working-directory: apps/viewer_windows
+
+  integration:
+    name: Integration (docker compose)
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
+    needs: [backend, media-server]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: cp .env.example .env
+      - run: make dev
+      - run: |
+          curl -fsS http://localhost:8000/health
+          curl -fsS http://localhost:3000/health
+      - if: failure()
+        run: docker compose logs
+      - if: always()
+        run: docker compose down -v

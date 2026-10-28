@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ViewerActivateRequest",
+  "description": "POST /api/v1/viewer/activate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "activation_key",
+    "machine_id"
+  ],
+  "properties": {
+    "activation_key": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "machine_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "Computer name shown in the admin panel."
+    }
+  }
+}

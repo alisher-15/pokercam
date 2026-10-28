@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AccessTokenClaims",
+  "description": "Claims of the Ed25519 access JWT issued by the backend and checked by media-server.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sub",
+    "role",
+    "client_id",
+    "table_id",
+    "lic",
+    "iat",
+    "exp"
+  ],
+  "properties": {
+    "sub": {
+      "type": "string",
+      "minLength": 1,
+      "description": "device_id for a camera, viewer_id for a viewer."
+    },
+    "role": {
+      "$ref": "../common.json#/definitions/Role"
+    },
+    "client_id": {
+      "$ref": "../common.json#/definitions/Uuid"
+    },
+    "table_id": {
+      "$ref": "../common.json#/definitions/Uuid"
+    },
+    "lic": {
+      "title": "TokenLicenseStatus",
+      "type": "string",
+      "enum": [
+        "active",
+        "grace"
+      ]
+    },
+    "iat": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "exp": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

@@ -27,3 +27,7 @@ Android-телефон над столом -> медиа-сервер -> до 5 
 - make dev    — поднять backend + media-server + postgres в docker compose
 - make test   — все тесты всех компонентов
 - make lint   — линтеры (ruff, eslint, dart analyze)
+- make setup  — поставить зависимости всех компонентов
+- make codegen — типы для Dart, TS, Python из contracts/ (после любого изменения схем)
+- make l10n   — локализации из apps/shared/lib/l10n/*.arb
+- make check-generated — сгенерированное совпадает с закоммиченным (проверяет и CI)

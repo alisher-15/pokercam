@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PairingCodeResponse",
+  "description": "POST /api/v1/tables/{id}/pairing-code",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "code",
+    "expires_at",
+    "qr_payload"
+  ],
+  "properties": {
+    "code": {
+      "type": "string",
+      "pattern": "^[0-9]{6}$"
+    },
+    "expires_at": {
+      "$ref": "../common.json#/definitions/DateTime"
+    },
+    "qr_payload": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Text of the QR code shown on the PC: the server address and the code, so a new phone needs nothing else."
+    }
+  }
+}

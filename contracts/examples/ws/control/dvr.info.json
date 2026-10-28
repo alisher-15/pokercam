@@ -1,0 +1,11 @@
+{
+  "type": "dvr.info",
+  "id": "m-0009",
+  "ts": 1793180000009,
+  "table_id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+  "payload": {
+    "available_from": 1793179400000,
+    "available_to": 1793179998500,
+    "playlist_url": "/dvr/3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88/index.m3u8"
+  }
+}

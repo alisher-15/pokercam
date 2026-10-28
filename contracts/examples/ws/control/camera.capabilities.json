@@ -1,0 +1,123 @@
+{
+  "type": "camera.capabilities",
+  "id": "m-0001",
+  "ts": 1793180000001,
+  "table_id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+  "payload": {
+    "params": {
+      "focus": {
+        "supported": true,
+        "modes": [
+          "auto",
+          "manual"
+        ],
+        "min": 0,
+        "max": 10,
+        "step": 0.1,
+        "presets": [],
+        "current": {
+          "mode": "manual",
+          "value": 2.5
+        },
+        "default": {
+          "mode": "auto"
+        }
+      },
+      "iso": {
+        "supported": true,
+        "modes": [
+          "auto",
+          "manual"
+        ],
+        "min": 100,
+        "max": 3200,
+        "step": 50,
+        "presets": [],
+        "current": {
+          "mode": "auto"
+        },
+        "default": {
+          "mode": "auto"
+        }
+      },
+      "exposure": {
+        "supported": true,
+        "modes": [
+          "auto",
+          "manual"
+        ],
+        "min": 100000,
+        "max": 33333333,
+        "step": 100000,
+        "presets": [],
+        "current": {
+          "mode": "auto"
+        },
+        "default": {
+          "mode": "auto"
+        }
+      },
+      "brightness": {
+        "supported": true,
+        "modes": [
+          "manual"
+        ],
+        "min": -12,
+        "max": 12,
+        "step": 1,
+        "presets": [],
+        "current": {
+          "mode": "manual",
+          "value": 0
+        },
+        "default": {
+          "mode": "manual",
+          "value": 0
+        }
+      },
+      "contrast": {
+        "supported": false,
+        "modes": [],
+        "presets": []
+      },
+      "white_balance": {
+        "supported": true,
+        "modes": [
+          "auto",
+          "preset"
+        ],
+        "presets": [
+          "incandescent",
+          "fluorescent",
+          "daylight",
+          "cloudy_daylight"
+        ],
+        "current": {
+          "mode": "preset",
+          "preset": "daylight"
+        },
+        "default": {
+          "mode": "auto"
+        }
+      },
+      "zoom": {
+        "supported": true,
+        "modes": [
+          "manual"
+        ],
+        "min": 1,
+        "max": 8,
+        "step": 0.1,
+        "presets": [],
+        "current": {
+          "mode": "manual",
+          "value": 1.5
+        },
+        "default": {
+          "mode": "manual",
+          "value": 1
+        }
+      }
+    }
+  }
+}

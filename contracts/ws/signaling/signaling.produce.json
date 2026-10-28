@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SignalingProduceMessage",
+  "description": "Camera -> server: publish the video track (from the send transport's produce event).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "signaling.produce"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "SignalingProducePayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transport_id",
+        "kind",
+        "rtp_parameters"
+      ],
+      "properties": {
+        "transport_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "mediasoup object id."
+        },
+        "kind": {
+          "$ref": "../../common.json#/definitions/MediaKind"
+        },
+        "rtp_parameters": {
+          "type": "object",
+          "description": "mediasoup RtpParameters."
+        }
+      }
+    }
+  }
+}

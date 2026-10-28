@@ -1,0 +1,35 @@
+{
+  "type": "signaling.create_transport.result",
+  "id": "m-0016",
+  "ts": 1793180000016,
+  "table_id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+  "payload": {
+    "request_id": "m-0015",
+    "transport_id": "t-1",
+    "ice_parameters": {
+      "usernameFragment": "abc",
+      "password": "def",
+      "iceLite": true
+    },
+    "ice_candidates": [
+      {
+        "foundation": "udpcandidate",
+        "priority": 1076302079,
+        "ip": "203.0.113.10",
+        "port": 40001,
+        "type": "host",
+        "protocol": "udp"
+      }
+    ],
+    "dtls_parameters": {
+      "role": "auto",
+      "fingerprints": [
+        {
+          "algorithm": "sha-256",
+          "value": "AB:CD"
+        }
+      ]
+    },
+    "ice_servers": []
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SignalingCreateTransportMessage",
+  "description": "Client -> server: create a WebRTC transport. Camera: send, viewer: recv.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "signaling.create_transport"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "SignalingCreateTransportPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "direction"
+      ],
+      "properties": {
+        "direction": {
+          "title": "TransportDirection",
+          "type": "string",
+          "enum": [
+            "send",
+            "recv"
+          ]
+        },
+        "force_tcp": {
+          "type": "boolean",
+          "description": "Offer TCP candidates only (networks that block UDP)."
+        }
+      }
+    }
+  }
+}

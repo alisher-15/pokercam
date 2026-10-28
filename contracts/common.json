@@ -1,0 +1,174 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Definitions shared by every contract. Not a message itself.",
+  "definitions": {
+    "Uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "MessageId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Unique id of a WebSocket message, chosen by its sender. Replies point to it with request_id."
+    },
+    "TimestampMs": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Unix time in milliseconds (UTC)."
+    },
+    "DateTime": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 date and time with a time zone."
+    },
+    "Role": {
+      "title": "Role",
+      "type": "string",
+      "enum": [
+        "camera",
+        "viewer"
+      ]
+    },
+    "MediaKind": {
+      "title": "MediaKind",
+      "type": "string",
+      "enum": [
+        "video"
+      ],
+      "description": "The MVP sends video only."
+    },
+    "LicenseStatus": {
+      "title": "LicenseStatus",
+      "type": "string",
+      "enum": [
+        "active",
+        "grace",
+        "expired",
+        "suspended"
+      ],
+      "description": "Computed by the backend from paid_until and the suspended flag (SPEC 5.1)."
+    },
+    "CameraParam": {
+      "title": "CameraParam",
+      "type": "string",
+      "enum": [
+        "focus",
+        "iso",
+        "exposure",
+        "brightness",
+        "contrast",
+        "white_balance",
+        "zoom"
+      ]
+    },
+    "ControlMode": {
+      "title": "ControlMode",
+      "type": "string",
+      "enum": [
+        "auto",
+        "manual",
+        "preset"
+      ],
+      "description": "preset is used by white_balance only."
+    },
+    "WhiteBalancePreset": {
+      "title": "WhiteBalancePreset",
+      "type": "string",
+      "enum": [
+        "incandescent",
+        "fluorescent",
+        "warm_fluorescent",
+        "daylight",
+        "cloudy_daylight",
+        "twilight",
+        "shade"
+      ],
+      "description": "Camera2 AWB modes other than AUTO and OFF."
+    },
+    "CameraControl": {
+      "title": "CameraControl",
+      "description": "Setting of one camera parameter.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "$ref": "#/definitions/ControlMode"
+        },
+        "value": {
+          "type": "number",
+          "description": "Manual value in the parameter's own units; required when mode is manual."
+        },
+        "preset": {
+          "$ref": "#/definitions/WhiteBalancePreset"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "manual"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "value"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "preset"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "preset"
+            ]
+          }
+        }
+      ]
+    },
+    "BrandColors": {
+      "title": "BrandColors",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary",
+        "secondary",
+        "background",
+        "accent"
+      ],
+      "properties": {
+        "primary": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Color as #RRGGBB."
+        },
+        "secondary": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Color as #RRGGBB."
+        },
+        "background": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Color as #RRGGBB."
+        },
+        "accent": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Color as #RRGGBB."
+        }
+      }
+    }
+  }
+}

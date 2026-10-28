@@ -1,0 +1,5 @@
+{
+  "code": "482913",
+  "expires_at": "2026-10-28T11:05:00Z",
+  "qr_payload": "{\"v\":1,\"api\":\"https://cam.example.com\",\"code\":\"482913\"}"
+}

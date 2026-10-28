@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DeviceAlertMessage",
+  "description": "Camera -> viewers: something needs attention. message_key is a localization key.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "device.alert"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "DeviceAlertPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "level",
+        "message_key"
+      ],
+      "properties": {
+        "kind": {
+          "title": "AlertKind",
+          "type": "string",
+          "enum": [
+            "low_battery",
+            "overheating",
+            "bitrate_reduced",
+            "network_poor"
+          ]
+        },
+        "level": {
+          "title": "AlertLevel",
+          "type": "string",
+          "enum": [
+            "info",
+            "warning",
+            "critical"
+          ]
+        },
+        "message_key": {
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9]*$",
+          "description": "Localization key of the text to show (an ARB key in apps/shared/lib/l10n)."
+        }
+      }
+    }
+  }
+}

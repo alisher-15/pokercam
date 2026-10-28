@@ -1,0 +1,13 @@
+{
+  "type": "signaling.consume",
+  "id": "m-0021",
+  "ts": 1793180000021,
+  "table_id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+  "payload": {
+    "transport_id": "t-1",
+    "rtp_capabilities": {
+      "codecs": [],
+      "headerExtensions": []
+    }
+  }
+}

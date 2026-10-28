@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StreamStatusMessage",
+  "description": "Server -> viewers: state of the table's camera stream.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "stream.status"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "StreamStatusPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "since"
+      ],
+      "properties": {
+        "status": {
+          "title": "StreamState",
+          "type": "string",
+          "enum": [
+            "live",
+            "reconnecting",
+            "offline"
+          ]
+        },
+        "since": {
+          "$ref": "../../common.json#/definitions/TimestampMs"
+        }
+      }
+    }
+  }
+}

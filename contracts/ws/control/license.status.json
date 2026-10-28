@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LicenseStatusMessage",
+  "description": "Server -> everyone in the room. grace_until is set when status is grace.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "license.status"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "LicenseStatusPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "title": "RoomLicenseStatus",
+          "type": "string",
+          "enum": [
+            "active",
+            "grace",
+            "blocked"
+          ]
+        },
+        "grace_until": {
+          "$ref": "../../common.json#/definitions/TimestampMs"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "grace"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "grace_until"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

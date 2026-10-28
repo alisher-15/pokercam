@@ -1,0 +1,23 @@
+{
+  "type": "device.telemetry",
+  "id": "m-0005",
+  "ts": 1793180000005,
+  "table_id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+  "payload": {
+    "battery_pct": 87,
+    "charging": true,
+    "temp_c": 36.5,
+    "thermal_status": "light",
+    "network": {
+      "type": "wifi",
+      "rssi": -58,
+      "rtt_ms": 12,
+      "uplink_kbps": 24000
+    },
+    "stream": {
+      "bitrate_kbps": 3950,
+      "fps": 30,
+      "dropped_frames": 0
+    }
+  }
+}

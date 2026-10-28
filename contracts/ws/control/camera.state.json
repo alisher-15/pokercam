@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CameraStateMessage",
+  "description": "Camera -> all viewers: current settings and who changed them last.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "camera.state"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "CameraStatePayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "controls"
+      ],
+      "properties": {
+        "controls": {
+          "title": "CameraControls",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "focus": {
+              "$ref": "../../common.json#/definitions/CameraControl"
+            },
+            "iso": {
+              "$ref": "../../common.json#/definitions/CameraControl"
+            },
+            "exposure": {
+              "$ref": "../../common.json#/definitions/CameraControl"
+            },
+            "brightness": {
+              "$ref": "../../common.json#/definitions/CameraControl"
+            },
+            "contrast": {
+              "$ref": "../../common.json#/definitions/CameraControl"
+            },
+            "white_balance": {
+              "$ref": "../../common.json#/definitions/CameraControl"
+            },
+            "zoom": {
+              "$ref": "../../common.json#/definitions/CameraControl"
+            }
+          }
+        },
+        "last_changed_by": {
+          "title": "Actor",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "role",
+            "id"
+          ],
+          "properties": {
+            "role": {
+              "$ref": "../../common.json#/definitions/Role"
+            },
+            "id": {
+              "$ref": "../../common.json#/definitions/Uuid"
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        },
+        "last_changed_at": {
+          "$ref": "../../common.json#/definitions/TimestampMs"
+        }
+      }
+    }
+  }
+}

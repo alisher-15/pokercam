@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BrandConfig",
+  "description": "branding/<brand>/brand.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "app_name",
+    "android_application_id",
+    "windows_app_id",
+    "colors",
+    "logo",
+    "icon"
+  ],
+  "properties": {
+    "app_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50
+    },
+    "android_application_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+    },
+    "windows_app_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9]*(\\.[A-Za-z][A-Za-z0-9]*)+$"
+    },
+    "colors": {
+      "$ref": "../common.json#/definitions/BrandColors"
+    },
+    "logo": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+\\.png$",
+      "description": "File in the brand's folder."
+    },
+    "icon": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+\\.png$",
+      "description": "File in the brand's folder, square, at least 1024x1024."
+    }
+  }
+}

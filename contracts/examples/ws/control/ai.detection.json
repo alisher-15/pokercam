@@ -1,0 +1,33 @@
+{
+  "type": "ai.detection",
+  "id": "m-0010",
+  "ts": 1793180000010,
+  "table_id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+  "payload": {
+    "ts": 1793179998500,
+    "cards": [
+      {
+        "rank": "A",
+        "suit": "spades",
+        "confidence": 0.97,
+        "bbox": {
+          "x": 0.41,
+          "y": 0.52,
+          "w": 0.06,
+          "h": 0.11
+        }
+      },
+      {
+        "rank": "10",
+        "suit": "hearts",
+        "confidence": 0.88,
+        "bbox": {
+          "x": 0.48,
+          "y": 0.52,
+          "w": 0.06,
+          "h": 0.11
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DvrInfoMessage",
+  "description": "Server -> viewer: the rewind buffer that is available.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "dvr.info"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "DvrInfoPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "available_from",
+        "available_to",
+        "playlist_url"
+      ],
+      "properties": {
+        "available_from": {
+          "$ref": "../../common.json#/definitions/TimestampMs"
+        },
+        "available_to": {
+          "$ref": "../../common.json#/definitions/TimestampMs"
+        },
+        "playlist_url": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path or URL of the HLS playlist, e.g. /dvr/{table_id}/index.m3u8."
+        }
+      }
+    }
+  }
+}

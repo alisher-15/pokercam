@@ -121,7 +121,7 @@ ADR-3 — отклонение от исходного ТЗ (там буфер �
 | --- | --- |
 | Android-камера | Flutter 3.x, BLoC, flutter\_webrtc, mediasoup\_client\_flutter, нативный Kotlin-плагин для Camera2 |
 | Windows-клиент | Flutter 3.x (Windows), BLoC, flutter\_webrtc для live, media\_kit (libmpv) для перемотки |
-| Media-server | Node.js 20 LTS, TypeScript, mediasoup 3.x, ws |
+| Media-server | Node.js 24 LTS (было 20: его поддержка закончилась в апреле 2026, замена согласована 28.10.2026), TypeScript, mediasoup 3.x, ws |
 | DVR-сервис | FFmpeg (remux без перекодирования), сегменты fMP4 по 1 с, tmpfs; управляется из media-server |
 | Backend | Python 3.12, FastAPI, SQLAlchemy 2, Alembic, PostgreSQL 16, PyJWT (Ed25519) |
 | Админка | Серверные шаблоны Jinja2 + HTMX внутри backend |
