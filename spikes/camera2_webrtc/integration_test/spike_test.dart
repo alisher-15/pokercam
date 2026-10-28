@@ -49,6 +49,8 @@ void main() {
       isNotEmpty,
       reason: 'the camera supports no manual setting at all',
     );
+    // Every supported setting must apply while the stream runs. The 1 s budget is judged on a phone
+    // (`passed` in the report): the emulator's camera runs at a few frames a second.
     for (final MapEntry(key: param, value: result) in supported) {
       expect(
         result['applied'],

@@ -87,6 +87,9 @@ Future<Map<String, dynamic>> runSelfTest(
       continue;
     }
     try {
+      // Each parameter from all-automatic, so one manual setting does not change how another behaves.
+      await camera.reset(trackId);
+      await Future<void>.delayed(const Duration(milliseconds: 300));
       final requested = await camera.set(
         trackId,
         param,
@@ -99,7 +102,8 @@ Future<Map<String, dynamic>> runSelfTest(
       results[param] = {
         'supported': true,
         'requested': requested,
-        'applied': appliedMs != null && appliedMs <= maxApplyMs,
+        'applied': appliedMs != null,
+        'within_1s': appliedMs != null && appliedMs <= maxApplyMs,
         'applied_after_ms': appliedMs,
         'camera_reports': (state['result'] as Map<String, dynamic>)[param],
         if (state['error'] != null) 'error': state['error'],
@@ -125,10 +129,11 @@ Future<Map<String, dynamic>> runSelfTest(
     'frames_decoded_during_test': decoded,
   };
   final supported = results.values.where((r) => r['supported'] == true);
+  // On a phone every setting must apply within 1 s (SPEC 6.5); the emulator only proves the mechanism.
   report['passed'] =
       decoded > 0 &&
       supported.isNotEmpty &&
-      supported.every((r) => r['applied'] == true);
+      supported.every((r) => r['within_1s'] == true);
   return report;
 }
 
