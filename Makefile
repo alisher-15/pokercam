@@ -2,8 +2,9 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
+# Pass the settings from .env (if there is one) to docker compose, the backend and its tests.
 -include .env
-export
+export $(shell sed -n 's/^\([A-Z_][A-Z0-9_]*\)=.*/\1/p' .env 2>/dev/null)
 
 PYTHON ?= python3.12
 VENV := backend/.venv
