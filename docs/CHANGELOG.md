@@ -2,7 +2,7 @@
 
 ## Этап 3 «Media-server» — 28.10.2026
 
-- **Комнаты** (SPEC 7): mediasoup 3.32, воркер на ядро, у каждого воркера WebRtcServer с одним UDP- и TCP-портом (`RTC_PORT_MIN`…, `RTC_ANNOUNCED_ADDRESS`); комната на стол, кодеки H264 (42e01f, 4d001f) и VP8. Падение воркера перезапускает контейнер.
+- **Комнаты** (SPEC 7): mediasoup 3.32, воркер на ядро, у каждого воркера WebRtcServer с одним UDP- и TCP-портом (`RTC_PORT_MIN`…, `RTC_ANNOUNCED_ADDRESS`); комната на стол, кодеки H264 (42e01f, 4d001f) и VP8. Падение воркера перезапускает контейнер. Образ — `node:24-trixie-slim` (Debian 13): готовому воркеру mediasoup для ядер 7.x нужна glibc 2.38.
 - **Сигналинг** на `/ws`: `join` по JWT (Ed25519, ключ из backend, проверка на месте), роль и стол — только из токена; транспорты (камера отправляет, зрители принимают; `force_tcp`), produce / consume / resume, ошибки `signaling.error` с кодами. Новые сообщения `signaling.new_producer` и `signaling.consumer_closed`.
 - **Лимит зрителей** `MAX_VIEWERS_PER_TABLE` (5; в пилоте 1 в `.env.example`), лишний получает `room_full`. Публикует только телефон, привязанный к столу сейчас; новая камера вытесняет старую (код 4001).
 - **Control hub**: `camera.capabilities` / `camera.state` / `camera.telemetry` от камеры рассылаются зрителям и кэшируются для поздно подключившихся; `camera.set` идёт камере, `camera.ack` — только отправителю; без камеры зритель сразу получает отказ `camera_unavailable`.

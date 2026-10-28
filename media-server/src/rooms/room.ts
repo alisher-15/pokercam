@@ -12,8 +12,8 @@ import type {
   StreamStatusMessage,
 } from "../contracts/types.js";
 import { message } from "../contracts/validate.js";
-import type { Peer } from "../signaling/peer.js";
 import { withContext } from "../log.js";
+import type { Peer } from "../signaling/peer.js";
 
 export interface RoomLicense {
   status: RoomLicenseStatus;
