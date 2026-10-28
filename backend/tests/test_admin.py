@@ -280,3 +280,13 @@ def test_audit_page_filters_by_client(admin: TestClient, make_club) -> None:
     page = admin.get(f"/admin/audit?client_id={first.client.id}").text
     assert "license.suspended" in page
     assert "license.max_tables_set" not in page
+
+
+def test_language_switch_stays_inside_the_admin(client: TestClient) -> None:
+    inside = client.get("/admin/lang/en", headers={"Referer": "http://testserver/admin/brands"}, follow_redirects=False)
+    assert inside.headers["location"] == "/admin/brands"
+    assert inside.cookies["lang"] == "en"
+    outside = client.get("/admin/lang/ru", headers={"Referer": "https://evil.example/admin"}, follow_redirects=False)
+    assert outside.headers["location"] == "/admin"
+    elsewhere = client.get("/admin/lang/ru", headers={"Referer": "https://evil.example/phish"}, follow_redirects=False)
+    assert elsewhere.headers["location"] == "/admin"

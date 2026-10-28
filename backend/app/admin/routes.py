@@ -9,6 +9,7 @@ import uuid
 from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 from typing import Annotated, Any
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, FastAPI, Form, Request
@@ -130,7 +131,9 @@ def _now() -> datetime:
 
 @router.get("/lang/{lang}")
 def set_language(lang: str, request: Request) -> Response:
-    response = RedirectResponse(request.headers.get("referer") or "/admin", status_code=303)
+    # Back to the page the link was on; only a path inside /admin, never another site.
+    back = urlsplit(request.headers.get("referer", "")).path
+    response = RedirectResponse(back if back.startswith("/admin") else "/admin", status_code=303)
     if lang in LANGUAGES:
         response.set_cookie("lang", lang, max_age=365 * 86400, samesite="strict")
     return response
