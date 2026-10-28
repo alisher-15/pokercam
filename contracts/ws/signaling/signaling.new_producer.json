@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SignalingNewProducerMessage",
+  "description": "Server -> viewers: the table's camera publishes (on join, or after the phone was replaced); consume it with signaling.consume.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "signaling.new_producer"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "SignalingNewProducerPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "producer_id",
+        "kind"
+      ],
+      "properties": {
+        "producer_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "mediasoup object id."
+        },
+        "kind": {
+          "$ref": "../../common.json#/definitions/MediaKind"
+        }
+      }
+    }
+  }
+}

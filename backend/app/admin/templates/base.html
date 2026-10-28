@@ -27,6 +27,7 @@
   </header>
   <main>
     {% if error %}<p class="error" role="alert">{{ t('error.' ~ error) }}</p>{% endif %}
+    {% if notice %}<p class="notice" role="status">{{ t('notice.' ~ notice) }}</p>{% endif %}
     {% block content %}{% endblock %}
   </main>
 </body>

@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SignalingConsumerClosedMessage",
+  "description": "Server -> viewer: a consumer is gone (the camera stopped or was replaced, or the license blocked the stream); close it on the Device.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "id",
+    "ts",
+    "table_id",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "const": "signaling.consumer_closed"
+    },
+    "id": {
+      "$ref": "../../common.json#/definitions/MessageId"
+    },
+    "ts": {
+      "$ref": "../../common.json#/definitions/TimestampMs"
+    },
+    "table_id": {
+      "$ref": "../../common.json#/definitions/Uuid"
+    },
+    "payload": {
+      "title": "SignalingConsumerClosedPayload",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "consumer_id"
+      ],
+      "properties": {
+        "consumer_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "mediasoup object id."
+        }
+      }
+    }
+  }
+}

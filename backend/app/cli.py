@@ -1,4 +1,4 @@
-"""python -m app.cli <command>: gen-keys, create-admin, seed."""
+"""python -m app.cli <command>: gen-keys, create-admin, create-client, seed."""
 
 import argparse
 import base64
@@ -51,6 +51,22 @@ def create_admin(session: Session, email: str, password: str) -> bool:
     return created
 
 
+def create_client(session: Session, name: str, tables: int = 1) -> str:
+    """A client with the demo brand, a paid month and `tables` tables; returns its activation key (shown once)."""
+    brand = session.scalar(select(Brand).where(Brand.app_name == DEMO_BRAND["app_name"])) or Brand(**DEMO_BRAND)
+    key = new_activation_key()
+    client = Client(name=name, brand=brand, activation_key_hash=keyed_hash(normalize_activation_key(key)))
+    session.add(client)
+    session.flush()
+    paid_until = licenses.add_month(datetime.now(UTC))
+    session.add(License(client_id=client.id, paid_until=paid_until, max_tables=tables))
+    session.add_all(PokerTable(client_id=client.id, name=str(n), number=n) for n in range(1, tables + 1))
+    audit.record(
+        session, actor="cli", action="client.created", entity="client", entity_id=client.id, client_id=client.id
+    )
+    return key
+
+
 def seed(session: Session) -> str | None:
     """Demo brand, client with a paid month and one table (SPEC 9.3, pilot: one table), admin from .env.
 
@@ -79,6 +95,9 @@ def main(argv: list[str] | None = None) -> int:
     admin = commands.add_parser("create-admin", help="create an admin or set its password")
     admin.add_argument("email")
     admin.add_argument("password")
+    client = commands.add_parser("create-client", help="a client with a paid month; prints only its activation key")
+    client.add_argument("name")
+    client.add_argument("--tables", type=int, default=1)
     commands.add_parser("seed", help="demo brand, client and table; admin from ADMIN_EMAIL / ADMIN_PASSWORD")
     args = parser.parse_args(argv)
 
@@ -89,6 +108,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "create-admin":
             created = create_admin(session, args.email, args.password)
             print("admin created" if created else "admin password updated")
+        elif args.command == "create-client":
+            print(create_client(session, args.name, args.tables))
         else:
             key = seed(session)
             print(f"demo client created, activation key: {key}" if key else "demo data already there")

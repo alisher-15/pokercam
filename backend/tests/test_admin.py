@@ -11,6 +11,7 @@ from app.admin.routes import _CATALOGS
 from app.cli import create_admin
 from app.contracts.common import LicenseStatus
 from app.models import AuditLog, Brand, Client, Device, License, PokerTable, Viewer
+from app.services import media_server
 from app.services.licenses import add_month
 from tests.conftest import access_token, activate, pair_phone
 
@@ -74,7 +75,9 @@ def test_every_template_key_is_translated() -> None:
     # Keys built at render time: statuses, form errors, brand colors.
     used |= {f"status.{s.value}" for s in LicenseStatus}
     routes = (templates.parent / "routes.py").read_text()
-    used |= {f"error.{code}" for code in re.findall(r'_back\([^)]*"([a-z_]+)"\)', routes)}
+    used |= {f"error.{code}" for code in re.findall(r'_back\([^)=]*, "([a-z_]+)"\)', routes)}
+    used |= {f"notice.{code}" for code in re.findall(r'_back\([^)]*notice="([a-z_]+)"\)', routes)}
+    assert any(key.startswith("notice.") for key in used)
     used |= {f"brands.color.{c}" for c in ("primary", "secondary", "background", "accent")}
     for lang, catalog in _CATALOGS.items():
         assert not used - catalog.keys(), lang
@@ -220,11 +223,19 @@ def test_deleting_a_table_unpairs_its_phone(admin: TestClient, db: Session, make
         ("/tables/{table}/delete", {}, "table.deleted"),
         ("/devices/{device}/revoke", {}, "device.revoked"),
         ("/viewers/{viewer}/revoke", {}, "viewer.revoked"),
+        ("/apply-now", {}, "license.applied_now"),
     ],
 )
 def test_every_admin_change_is_audited(
-    admin: TestClient, db: Session, make_club, path: str, data: dict[str, object], action: str
+    admin: TestClient,
+    db: Session,
+    make_club,
+    monkeypatch: pytest.MonkeyPatch,
+    path: str,
+    data: dict[str, object],
+    action: str,
 ) -> None:
+    monkeypatch.setattr(media_server, "recheck_license", lambda table_ids: True)
     club = make_club(max_tables=2)
     viewer = activate(admin, club.key)
     phone = pair_phone(admin, access_token(admin, viewer["refresh_token"]), club.table.id)
@@ -290,3 +301,24 @@ def test_language_switch_stays_inside_the_admin(client: TestClient) -> None:
     assert outside.headers["location"] == "/admin"
     elsewhere = client.get("/admin/lang/ru", headers={"Referer": "https://evil.example/phish"}, follow_redirects=False)
     assert elsewhere.headers["location"] == "/admin"
+
+
+def test_apply_now_asks_media_server_for_every_table(
+    admin: TestClient, make_club, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    club = make_club(max_tables=2, tables=2)
+    asked: list[object] = []
+    monkeypatch.setattr(media_server, "recheck_license", lambda table_ids: asked.extend(table_ids) or True)
+    response = admin.post(f"/admin/clients/{club.client.id}/apply-now", follow_redirects=False)
+    assert response.headers["location"].endswith("?notice=applied")
+    assert sorted(asked) == sorted(t.id for t in club.tables)
+    assert "Медиа-сервер применил" in admin.get(response.headers["location"], headers={"Accept-Language": "ru"}).text
+
+
+def test_apply_now_reports_an_unreachable_media_server(
+    admin: TestClient, make_club, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    club = make_club()
+    monkeypatch.setattr(media_server, "recheck_license", lambda table_ids: False)
+    response = admin.post(f"/admin/clients/{club.client.id}/apply-now", follow_redirects=False)
+    assert response.headers["location"].endswith("?error=media_server_unreachable")

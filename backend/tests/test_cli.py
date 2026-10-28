@@ -68,3 +68,16 @@ def test_production_starts_with_real_secrets() -> None:
 def test_empty_secrets_fall_back_to_development_defaults() -> None:
     settings = Settings(_env_file=None, hash_secret="", internal_api_token="")
     assert settings.hash_secret and settings.internal_api_token
+
+
+def test_create_client_prints_a_working_key(db: Session) -> None:
+    from app.cli import create_client
+    from app.security import keyed_hash, normalize_activation_key
+
+    key = create_client(db, "Acceptance 1", tables=2)
+    db.commit()
+    client = db.scalar(select(Client).where(Client.name == "Acceptance 1"))
+    assert client.activation_key_hash == keyed_hash(normalize_activation_key(key))
+    assert db.scalar(select(func.count()).where(PokerTable.client_id == client.id)) == 2
+    assert db.scalar(select(License.max_tables).where(License.client_id == client.id)) == 2
+    create_client(db, "Acceptance 2")  # reuses the demo brand

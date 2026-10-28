@@ -1,5 +1,27 @@
 # Changelog
 
+## Этап 3 «Media-server» — 28.10.2026
+
+- **Комнаты** (SPEC 7): mediasoup 3.32, воркер на ядро, у каждого воркера WebRtcServer с одним UDP- и TCP-портом (`RTC_PORT_MIN`…, `RTC_ANNOUNCED_ADDRESS`); комната на стол, кодеки H264 (42e01f, 4d001f) и VP8. Падение воркера перезапускает контейнер.
+- **Сигналинг** на `/ws`: `join` по JWT (Ed25519, ключ из backend, проверка на месте), роль и стол — только из токена; транспорты (камера отправляет, зрители принимают; `force_tcp`), produce / consume / resume, ошибки `signaling.error` с кодами. Новые сообщения `signaling.new_producer` и `signaling.consumer_closed`.
+- **Лимит зрителей** `MAX_VIEWERS_PER_TABLE` (5; в пилоте 1 в `.env.example`), лишний получает `room_full`. Публикует только телефон, привязанный к столу сейчас; новая камера вытесняет старую (код 4001).
+- **Control hub**: `camera.capabilities` / `camera.state` / `camera.telemetry` от камеры рассылаются зрителям и кэшируются для поздно подключившихся; `camera.set` идёт камере, `camera.ack` — только отправителю; без камеры зритель сразу получает отказ `camera_unavailable`.
+- **Лицензия** (ADR-7): проверка при открытии комнаты, при входе камеры и каждые 10 мин; `expired`/`suspended` закрывают поток и рассылают `license.status: blocked`, `grace` — предупреждение с датой. Если backend недоступен, остаётся последний статус.
+- **Backend**: камера онлайн в `GET /tables` по данным media-server (`PUT /internal/tables/{id}/camera`, сброс при старте media-server; миграция `0002`); в ответе лицензии `camera_device_id`; кнопка «Применить сейчас» в карточке клиента перепроверяет лицензию на media-server сразу; `python -m app.cli create-client` для тестов.
+- **Боты** `tools/`: фейковая камера (1080p30 H264, отвечает на `camera.set`) и фейковые зрители — headless Chromium с mediasoup-client, только Device API. `make acceptance` и CI (интеграционный прогон) проверяют критерий этапа: при 5 зрителях и в пилоте с 1.
+- JSON-логи media-server: каждое поле контекста ровно один раз в строке (раньше `table_id` мог повториться).
+
+Новые зависимости и зачем:
+
+| Где | Пакет | Зачем |
+| --- | --- | --- |
+| media-server | mediasoup | SFU из SPEC 4 |
+| media-server | ws | WebSocket-сервер сигналинга и control-канала |
+| tools (dev) | playwright | Headless Chromium с тестовой камерой для ботов |
+| tools (dev) | mediasoup-client | Device API в ботах — как в настоящих клиентах |
+| tools (dev) | esbuild | Сборка кода бота для страницы в Chromium |
+| tools (dev) | typescript, eslint, typescript-eslint, @types/node | Проверка типов и линтер ботов |
+
 ## Этап 2 «Backend» — 28.10.2026
 
 - **Данные** (SPEC 5.1): бренды, клиенты, лицензии, столы, телефоны, ПК, коды привязки, администраторы, журнал аудита; миграция `0001`. Ключи клубов, коды, refresh-токены и id устройств хранятся только как хэши.

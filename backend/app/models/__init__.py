@@ -72,6 +72,8 @@ class PokerTable(Base):
     name: Mapped[str] = mapped_column(Text)
     number: Mapped[int]
     created_at: Mapped[datetime] = _created()
+    # Since when the table's camera publishes to media-server; null while it does not (media-server reports it).
+    camera_connected_at: Mapped[datetime | None]
 
 
 class Device(Base):

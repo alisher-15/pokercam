@@ -105,6 +105,14 @@ export interface ApiError {
 }
 
 /**
+ * PUT /api/v1/internal/tables/{id}/camera (media-server -> backend): the table's camera
+ * started or stopped publishing. Answered with 204.
+ */
+export interface InternalCameraPresenceRequest {
+    online: boolean;
+}
+
+/**
  * GET /api/v1/internal/jwt-key (docker network only, called by media-server): the key
  * access tokens are verified with.
  */
@@ -120,11 +128,16 @@ export interface InternalJwtKeyResponse {
  * GET /api/v1/internal/tables/{id}/license (docker network only, called by media-server)
  */
 export interface InternalLicenseResponse {
-    client_id:   string;
-    grace_until: string;
-    paid_until:  string;
-    status:      LicenseStatus;
-    table_id:    string;
+    /**
+     * The phone paired to the table now; media-server lets only this device publish. Absent
+     * when no phone is paired.
+     */
+    camera_device_id?: string;
+    client_id:         string;
+    grace_until:       string;
+    paid_until:        string;
+    status:            LicenseStatus;
+    table_id:          string;
 }
 
 /**
@@ -624,6 +637,25 @@ export interface SignalingConsumeResultPayload {
  */
 
 /**
+ * Server -> viewer: a consumer is gone (the camera stopped or was replaced, or the license
+ * blocked the stream); close it on the Device.
+ */
+export interface SignalingConsumerClosedMessage {
+    id:       string;
+    payload:  SignalingConsumerClosedPayload;
+    table_id: string;
+    ts:       number;
+    type:     "signaling.consumer_closed";
+}
+
+export interface SignalingConsumerClosedPayload {
+    /**
+     * mediasoup object id.
+     */
+    consumer_id: string;
+}
+
+/**
  * Client -> server: create a WebRTC transport. Camera: send, viewer: recv.
  */
 export interface SignalingCreateTransportMessage {
@@ -776,6 +808,26 @@ export interface SignalingJoinResultPayload {
     request_id: string;
     role:       Role;
     session_id: string;
+}
+
+/**
+ * Server -> viewers: the table's camera publishes (on join, or after the phone was
+ * replaced); consume it with signaling.consume.
+ */
+export interface SignalingNewProducerMessage {
+    id:       string;
+    payload:  SignalingNewProducerPayload;
+    table_id: string;
+    ts:       number;
+    type:     "signaling.new_producer";
+}
+
+export interface SignalingNewProducerPayload {
+    kind: "video";
+    /**
+     * mediasoup object id.
+     */
+    producer_id: string;
 }
 
 /**

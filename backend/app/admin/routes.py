@@ -22,7 +22,7 @@ from app.api.deps import SessionDep
 from app.config import get_settings
 from app.models import AdminUser, AuditLog, Brand, Client, Device, License, PokerTable, Viewer
 from app.security import keyed_hash, new_activation_key, normalize_activation_key, verify_password
-from app.services import audit, licenses
+from app.services import audit, licenses, media_server
 from app.services.ratelimit import RateLimiter
 
 HERE = Path(__file__).parent
@@ -77,6 +77,7 @@ def _page(request: Request, name: str, **context: Any) -> HTMLResponse:
             "local": _local,
             "timezone": get_settings().timezone,
             "error": request.query_params.get("error"),
+            "notice": request.query_params.get("notice"),
             **context,
         },
     )
@@ -114,8 +115,9 @@ def _change(
     session.commit()
 
 
-def _back(url: str, error: str | None = None) -> RedirectResponse:
-    return RedirectResponse(f"{url}?error={error}" if error else url, status_code=303)
+def _back(url: str, error: str | None = None, notice: str | None = None) -> RedirectResponse:
+    query = f"?error={error}" if error else f"?notice={notice}" if notice else ""
+    return RedirectResponse(url + query, status_code=303)
 
 
 def _client(session: Session, client_id: uuid.UUID) -> Client:
@@ -299,6 +301,17 @@ def set_paid_until(
         paid_until=lic.paid_until,
     )
     return _back(f"/admin/clients/{client_id}")
+
+
+@router.post("/clients/{client_id}/apply-now")
+def apply_now(client_id: uuid.UUID, admin: AdminDep, session: SessionDep) -> Response:
+    """«Применить сейчас»: media-server rechecks the license of the client's tables at once."""
+    url = f"/admin/clients/{client_id}"
+    tables = session.scalars(select(PokerTable.id).where(PokerTable.client_id == client_id)).all()
+    if not media_server.recheck_license(list(tables)):
+        return _back(url, "media_server_unreachable")
+    _change(session, admin, "license.applied_now", "client", client_id, client_id, tables=len(tables))
+    return _back(url, notice="applied")
 
 
 @router.post("/clients/{client_id}/suspend")

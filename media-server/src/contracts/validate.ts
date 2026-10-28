@@ -1,7 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { Ajv, type ValidateFunction } from "ajv";
 import addFormatsModule from "ajv-formats";
 import { schemas } from "./schemas.js";
-import type { Message } from "./messages.js";
+import type { Message, MessageType } from "./messages.js";
 
 // ajv-formats is CommonJS; its default export arrives wrapped under nodenext resolution.
 const addFormats = addFormatsModule as unknown as (ajv: Ajv) => Ajv;
@@ -45,4 +46,17 @@ export function parseMessage(raw: string): ParseResult {
     return { ok: false, error: "not JSON" };
   }
   return validateMessage(data);
+}
+
+/** Checks any contract model (e.g. "auth/access_token_claims.json"). */
+export function validateModel(rel: string, data: unknown): { ok: true } | { ok: false; error: string } {
+  const validate = compiled(rel);
+  return validate(data) ? { ok: true } : { ok: false, error: ajv.errorsText(validate.errors) };
+}
+
+export type MessageOf<T extends MessageType> = Extract<Message, { type: T }>;
+
+/** A message sent by the server: new id, current time. */
+export function message<T extends MessageType>(type: T, tableId: string, payload: MessageOf<T>["payload"]): MessageOf<T> {
+  return { type, id: randomUUID(), ts: Date.now(), table_id: tableId, payload } as MessageOf<T>;
 }

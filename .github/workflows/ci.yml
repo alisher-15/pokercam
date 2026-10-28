@@ -29,6 +29,7 @@ jobs:
           cache-dependency-path: |
             contracts/package-lock.json
             media-server/package-lock.json
+            tools/package-lock.json
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -79,9 +80,12 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: media-server/package-lock.json
+          cache-dependency-path: |
+            media-server/package-lock.json
+            tools/package-lock.json
       - run: cd media-server && npm ci --no-audit --no-fund
-      - run: make lint-media-server
+      - run: cd tools && npm ci --no-audit --no-fund
+      - run: make lint-media-server lint-tools
       - run: make test-media-server
       - run: cd media-server && npm run build
 
@@ -140,11 +144,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: tools/package-lock.json
       - run: cp .env.example .env
       - run: make dev
       - run: |
           curl -fsS http://localhost:8000/health
           curl -fsS http://localhost:3000/health
+      - name: Install the bots (headless Chromium with a fake camera)
+        run: cd tools && npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
+      # Stage 3 (SPEC 12): a fake camera, as many bot viewers as the table allows, one more is refused.
+      - name: "Acceptance: the pilot, 1 viewer (.env.example)"
+        run: make acceptance
+      - name: "Acceptance: 5 viewers"
+        run: |
+          MAX_VIEWERS_PER_TABLE=5 docker compose up -d --wait media-server
+          make acceptance MAX_VIEWERS_PER_TABLE=5
       - if: failure()
         run: docker compose logs
       - if: always()

@@ -31,6 +31,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-pokercam}:${POSTGRES_PASSWORD:-pokercam}@postgres:5432/${POSTGRES_DB:-pokercam}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      MEDIA_SERVER_URL: http://media-server:3000
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     healthcheck:
@@ -43,11 +44,23 @@ services:
   media-server:
     build: ./media-server
     restart: unless-stopped
+    # INTERNAL_API_TOKEN and the RTC_* settings come from .env.
+    env_file:
+      - path: .env
+        required: false
     environment:
       PORT: 3000
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      BACKEND_URL: http://backend:8000
+      RTC_LISTEN_IP: 0.0.0.0
+      RTC_PORT_MIN: ${RTC_PORT_MIN:-40000}
+      RTC_PORT_MAX: ${RTC_PORT_MAX:-40003}
+      MAX_VIEWERS_PER_TABLE: ${MAX_VIEWERS_PER_TABLE:-5}
     ports:
       - "${MEDIA_SERVER_PORT:-3000}:3000"
+      # WebRTC: one UDP+TCP port per mediasoup worker; clients reach them at RTC_ANNOUNCED_ADDRESS.
+      - "${RTC_PORT_MIN:-40000}-${RTC_PORT_MAX:-40003}:${RTC_PORT_MIN:-40000}-${RTC_PORT_MAX:-40003}/udp"
+      - "${RTC_PORT_MIN:-40000}-${RTC_PORT_MAX:-40003}:${RTC_PORT_MIN:-40000}-${RTC_PORT_MAX:-40003}/tcp"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
       interval: 10s

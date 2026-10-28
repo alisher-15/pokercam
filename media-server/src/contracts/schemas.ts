@@ -378,6 +378,21 @@ export const schemas: Record<string, object> = {
       }
     }
   },
+  "rest/internal_camera_presence_request.json": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "InternalCameraPresenceRequest",
+    "description": "PUT /api/v1/internal/tables/{id}/camera (media-server -> backend): the table's camera started or stopped publishing. Answered with 204.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "online"
+    ],
+    "properties": {
+      "online": {
+        "type": "boolean"
+      }
+    }
+  },
   "rest/internal_jwt_key_response.json": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "InternalJwtKeyResponse",
@@ -427,6 +442,10 @@ export const schemas: Record<string, object> = {
       },
       "grace_until": {
         "$ref": "../common.json#/definitions/DateTime"
+      },
+      "camera_device_id": {
+        "$ref": "../common.json#/definitions/Uuid",
+        "description": "The phone paired to the table now; media-server lets only this device publish. Absent when no phone is paired."
       }
     }
   },
@@ -1660,6 +1679,50 @@ export const schemas: Record<string, object> = {
       }
     }
   },
+  "ws/signaling/signaling.consumer_closed.json": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "SignalingConsumerClosedMessage",
+    "description": "Server -> viewer: a consumer is gone (the camera stopped or was replaced, or the license blocked the stream); close it on the Device.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "type",
+      "id",
+      "ts",
+      "table_id",
+      "payload"
+    ],
+    "properties": {
+      "type": {
+        "const": "signaling.consumer_closed"
+      },
+      "id": {
+        "$ref": "../../common.json#/definitions/MessageId"
+      },
+      "ts": {
+        "$ref": "../../common.json#/definitions/TimestampMs"
+      },
+      "table_id": {
+        "$ref": "../../common.json#/definitions/Uuid"
+      },
+      "payload": {
+        "title": "SignalingConsumerClosedPayload",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "consumer_id"
+        ],
+        "properties": {
+          "consumer_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "mediasoup object id."
+          }
+        }
+      }
+    }
+  },
   "ws/signaling/signaling.create_transport.json": {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "SignalingCreateTransportMessage",
@@ -2041,6 +2104,54 @@ export const schemas: Record<string, object> = {
             "type": "string",
             "minLength": 1,
             "maxLength": 64
+          }
+        }
+      }
+    }
+  },
+  "ws/signaling/signaling.new_producer.json": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "SignalingNewProducerMessage",
+    "description": "Server -> viewers: the table's camera publishes (on join, or after the phone was replaced); consume it with signaling.consume.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "type",
+      "id",
+      "ts",
+      "table_id",
+      "payload"
+    ],
+    "properties": {
+      "type": {
+        "const": "signaling.new_producer"
+      },
+      "id": {
+        "$ref": "../../common.json#/definitions/MessageId"
+      },
+      "ts": {
+        "$ref": "../../common.json#/definitions/TimestampMs"
+      },
+      "table_id": {
+        "$ref": "../../common.json#/definitions/Uuid"
+      },
+      "payload": {
+        "title": "SignalingNewProducerPayload",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "producer_id",
+          "kind"
+        ],
+        "properties": {
+          "producer_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "mediasoup object id."
+          },
+          "kind": {
+            "$ref": "../../common.json#/definitions/MediaKind"
           }
         }
       }

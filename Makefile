@@ -10,9 +10,9 @@ PYTHON ?= python3.12
 VENV := backend/.venv
 APPS := apps/shared apps/camera_android apps/viewer_windows
 
-.PHONY: help setup setup-backend setup-node setup-apps dev down logs db keys seed \
+.PHONY: help setup setup-backend setup-node setup-apps dev down logs db keys seed acceptance \
 	test test-contracts test-backend test-media-server test-apps \
-	lint lint-backend lint-media-server lint-apps codegen l10n check-generated
+	lint lint-backend lint-media-server lint-tools lint-apps codegen l10n check-generated
 
 help: ## List the commands
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-20s %s\n", $$1, $$2}'
@@ -26,6 +26,7 @@ setup-backend:
 setup-node:
 	cd contracts && npm ci --no-audit --no-fund
 	cd media-server && npm ci --no-audit --no-fund
+	cd tools && npm ci --no-audit --no-fund
 
 setup-apps:
 	for app in $(APPS); do (cd $$app && flutter pub get) || exit 1; done
@@ -48,6 +49,10 @@ keys: ## Print fresh secrets for .env (production needs them)
 seed: ## Demo brand, client with a paid month, one table; admin from ADMIN_EMAIL / ADMIN_PASSWORD
 	docker compose exec backend python -m app.cli seed
 
+acceptance: ## Against `make dev`: a fake camera and MAX_VIEWERS_PER_TABLE fake viewers (stage 3)
+	key=$$(docker compose exec -T backend python -m app.cli create-client "Acceptance $$(date +%s)") && \
+	cd tools && node acceptance/stage3.ts --key "$$key" --viewers $${MAX_VIEWERS_PER_TABLE:-5}
+
 test: db test-contracts test-backend test-media-server test-apps ## All tests of all components
 
 test-contracts:
@@ -62,13 +67,16 @@ test-media-server:
 test-apps:
 	for app in $(APPS); do (cd $$app && flutter test) || exit 1; done
 
-lint: lint-backend lint-media-server lint-apps ## Linters: ruff, eslint + tsc, dart format + analyze
+lint: lint-backend lint-media-server lint-tools lint-apps ## Linters: ruff, eslint + tsc, dart format + analyze
 
 lint-backend:
 	cd backend && .venv/bin/ruff check . && .venv/bin/ruff format --check .
 
 lint-media-server:
 	cd media-server && npm run lint && npm run typecheck
+
+lint-tools:
+	cd tools && npm run lint && npm run typecheck
 
 lint-apps:
 	dart format --output=none --set-exit-if-changed $(addsuffix /lib,$(APPS)) $(addsuffix /test,$(APPS))

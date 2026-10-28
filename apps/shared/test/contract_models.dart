@@ -17,6 +17,8 @@ final contractModels =
           DevicePairResponse.fromJson(json).toJson(),
       'rest/error_response.json': (json) =>
           ErrorResponse.fromJson(json).toJson(),
+      'rest/internal_camera_presence_request.json': (json) =>
+          InternalCameraPresenceRequest.fromJson(json).toJson(),
       'rest/internal_jwt_key_response.json': (json) =>
           InternalJwtKeyResponse.fromJson(json).toJson(),
       'rest/internal_license_response.json': (json) =>
@@ -63,6 +65,8 @@ final contractModels =
           SignalingConsumeMessage.fromJson(json).toJson(),
       'ws/signaling/signaling.consume.result.json': (json) =>
           SignalingConsumeResultMessage.fromJson(json).toJson(),
+      'ws/signaling/signaling.consumer_closed.json': (json) =>
+          SignalingConsumerClosedMessage.fromJson(json).toJson(),
       'ws/signaling/signaling.create_transport.json': (json) =>
           SignalingCreateTransportMessage.fromJson(json).toJson(),
       'ws/signaling/signaling.create_transport.result.json': (json) =>
@@ -79,6 +83,8 @@ final contractModels =
           SignalingJoinMessage.fromJson(json).toJson(),
       'ws/signaling/signaling.join.result.json': (json) =>
           SignalingJoinResultMessage.fromJson(json).toJson(),
+      'ws/signaling/signaling.new_producer.json': (json) =>
+          SignalingNewProducerMessage.fromJson(json).toJson(),
       'ws/signaling/signaling.produce.json': (json) =>
           SignalingProduceMessage.fromJson(json).toJson(),
       'ws/signaling/signaling.produce.result.json': (json) =>

@@ -10,6 +10,8 @@ from app.models import AuditLog, Device, PairingCode, Viewer
 from app.security import public_key
 from tests.conftest import access_token, activate, bearer, pair_phone
 
+INTERNAL = {"X-Internal-Token": "test-internal-token"}
+
 
 def error_code(response) -> str:
     return response.json()["detail"]["code"]
@@ -228,15 +230,31 @@ def test_license_endpoint(client: TestClient, make_club) -> None:
     assert datetime.fromisoformat(body["grace_until"]) - datetime.fromisoformat(body["paid_until"]) == timedelta(days=3)
 
 
-def test_tables_show_the_camera_online_after_pairing(client: TestClient, make_club) -> None:
+def test_camera_is_online_while_media_server_says_so(client: TestClient, make_club) -> None:
     club = make_club()
     viewer_access = access_token(client, activate(client, club.key)["refresh_token"])
-    before = client.get("/api/v1/tables", headers=bearer(viewer_access)).json()["tables"]
-    assert before == [{"id": str(club.table.id), "name": "1", "number": 1, "camera_online": False}]
+
+    def table() -> dict:
+        return client.get("/api/v1/tables", headers=bearer(viewer_access)).json()["tables"][0]
+
+    assert table() == {"id": str(club.table.id), "name": "1", "number": 1, "camera_online": False}
     pair_phone(client, viewer_access, club.table.id)
-    after = client.get("/api/v1/tables", headers=bearer(viewer_access)).json()["tables"][0]
-    assert after["camera_online"] is True
-    assert "camera_last_seen_at" in after
+    assert table()["camera_online"] is False  # paired, not publishing yet
+    assert "camera_last_seen_at" in table()
+    presence = f"/api/v1/internal/tables/{club.table.id}/camera"
+    assert client.put(presence, json={"online": True}, headers=INTERNAL).status_code == 204
+    assert table()["camera_online"] is True
+    client.put(presence, json={"online": False}, headers=INTERNAL)
+    assert table()["camera_online"] is False
+
+
+def test_media_server_restart_clears_presence(client: TestClient, make_club) -> None:
+    club = make_club()
+    viewer_access = access_token(client, activate(client, club.key)["refresh_token"])
+    client.put(f"/api/v1/internal/tables/{club.table.id}/camera", json={"online": True}, headers=INTERNAL)
+    assert client.post("/api/v1/internal/media-server/started", headers=INTERNAL).status_code == 204
+    tables = client.get("/api/v1/tables", headers=bearer(viewer_access)).json()["tables"]
+    assert tables[0]["camera_online"] is False
 
 
 def test_brand(client: TestClient, make_club) -> None:
@@ -264,15 +282,22 @@ def test_unknown_route_has_the_error_shape(client: TestClient) -> None:
 # ---------------------------------------------------------------- internal routes for media-server
 
 
-INTERNAL = {"X-Internal-Token": "test-internal-token"}
-
-
 def test_internal_license(client: TestClient, make_club) -> None:
     club = make_club(paid_until=datetime.now(UTC) - timedelta(days=5))
     body = client.get(f"/api/v1/internal/tables/{club.table.id}/license", headers=INTERNAL).json()
     assert body["status"] == "expired"
     assert body["table_id"] == str(club.table.id)
     assert body["client_id"] == str(club.client.id)
+    assert "camera_device_id" not in body  # no phone paired
+
+
+def test_internal_license_names_the_current_phone(client: TestClient, make_club) -> None:
+    club = make_club()
+    viewer_access = access_token(client, activate(client, club.key)["refresh_token"])
+    pair_phone(client, viewer_access, club.table.id, android_id="old")
+    new = pair_phone(client, viewer_access, club.table.id, android_id="new")
+    body = client.get(f"/api/v1/internal/tables/{club.table.id}/license", headers=INTERNAL).json()
+    assert body["camera_device_id"] == new["device_id"]
 
 
 def test_internal_routes_need_the_token(client: TestClient, make_club) -> None:

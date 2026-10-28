@@ -8,6 +8,7 @@
 //     final devicePairRequest = devicePairRequestFromJson(jsonString);
 //     final devicePairResponse = devicePairResponseFromJson(jsonString);
 //     final errorResponse = errorResponseFromJson(jsonString);
+//     final internalCameraPresenceRequest = internalCameraPresenceRequestFromJson(jsonString);
 //     final internalJwtKeyResponse = internalJwtKeyResponseFromJson(jsonString);
 //     final internalLicenseResponse = internalLicenseResponseFromJson(jsonString);
 //     final licenseResponse = licenseResponseFromJson(jsonString);
@@ -32,6 +33,7 @@
 //     final signalingConnectTransportResultMessage = signalingConnectTransportResultMessageFromJson(jsonString);
 //     final signalingConsumeMessage = signalingConsumeMessageFromJson(jsonString);
 //     final signalingConsumeResultMessage = signalingConsumeResultMessageFromJson(jsonString);
+//     final signalingConsumerClosedMessage = signalingConsumerClosedMessageFromJson(jsonString);
 //     final signalingCreateTransportMessage = signalingCreateTransportMessageFromJson(jsonString);
 //     final signalingCreateTransportResultMessage = signalingCreateTransportResultMessageFromJson(jsonString);
 //     final signalingErrorMessage = signalingErrorMessageFromJson(jsonString);
@@ -39,6 +41,7 @@
 //     final signalingGetRouterRtpCapabilitiesResultMessage = signalingGetRouterRtpCapabilitiesResultMessageFromJson(jsonString);
 //     final signalingJoinMessage = signalingJoinMessageFromJson(jsonString);
 //     final signalingJoinResultMessage = signalingJoinResultMessageFromJson(jsonString);
+//     final signalingNewProducerMessage = signalingNewProducerMessageFromJson(jsonString);
 //     final signalingProduceMessage = signalingProduceMessageFromJson(jsonString);
 //     final signalingProduceResultMessage = signalingProduceResultMessageFromJson(jsonString);
 //     final signalingResumeMessage = signalingResumeMessageFromJson(jsonString);
@@ -78,6 +81,14 @@ ErrorResponse errorResponseFromJson(String str) =>
     ErrorResponse.fromJson(json.decode(str));
 
 String errorResponseToJson(ErrorResponse data) => json.encode(data.toJson());
+
+InternalCameraPresenceRequest internalCameraPresenceRequestFromJson(
+  String str,
+) => InternalCameraPresenceRequest.fromJson(json.decode(str));
+
+String internalCameraPresenceRequestToJson(
+  InternalCameraPresenceRequest data,
+) => json.encode(data.toJson());
 
 InternalJwtKeyResponse internalJwtKeyResponseFromJson(String str) =>
     InternalJwtKeyResponse.fromJson(json.decode(str));
@@ -224,6 +235,14 @@ String signalingConsumeResultMessageToJson(
   SignalingConsumeResultMessage data,
 ) => json.encode(data.toJson());
 
+SignalingConsumerClosedMessage signalingConsumerClosedMessageFromJson(
+  String str,
+) => SignalingConsumerClosedMessage.fromJson(json.decode(str));
+
+String signalingConsumerClosedMessageToJson(
+  SignalingConsumerClosedMessage data,
+) => json.encode(data.toJson());
+
 SignalingCreateTransportMessage signalingCreateTransportMessageFromJson(
   String str,
 ) => SignalingCreateTransportMessage.fromJson(json.decode(str));
@@ -272,6 +291,12 @@ SignalingJoinResultMessage signalingJoinResultMessageFromJson(String str) =>
     SignalingJoinResultMessage.fromJson(json.decode(str));
 
 String signalingJoinResultMessageToJson(SignalingJoinResultMessage data) =>
+    json.encode(data.toJson());
+
+SignalingNewProducerMessage signalingNewProducerMessageFromJson(String str) =>
+    SignalingNewProducerMessage.fromJson(json.decode(str));
+
+String signalingNewProducerMessageToJson(SignalingNewProducerMessage data) =>
     json.encode(data.toJson());
 
 SignalingProduceMessage signalingProduceMessageFromJson(String str) =>
@@ -536,6 +561,19 @@ class ApiError {
   Map<String, dynamic> toJson() => {"code": code, "message": message};
 }
 
+///PUT /api/v1/internal/tables/{id}/camera (media-server -> backend): the table's camera
+///started or stopped publishing. Answered with 204.
+class InternalCameraPresenceRequest {
+  final bool online;
+
+  InternalCameraPresenceRequest({required this.online});
+
+  factory InternalCameraPresenceRequest.fromJson(Map<String, dynamic> json) =>
+      InternalCameraPresenceRequest(online: json["online"]);
+
+  Map<String, dynamic> toJson() => {"online": online};
+}
+
 ///GET /api/v1/internal/jwt-key (docker network only, called by media-server): the key
 ///access tokens are verified with.
 class InternalJwtKeyResponse {
@@ -564,6 +602,9 @@ final algorithmValues = EnumValues({"EdDSA": Algorithm.ED_DSA});
 
 ///GET /api/v1/internal/tables/{id}/license (docker network only, called by media-server)
 class InternalLicenseResponse {
+  ///The phone paired to the table now; media-server lets only this device publish. Absent
+  ///when no phone is paired.
+  final String? cameraDeviceId;
   final String clientId;
   final DateTime graceUntil;
   final DateTime paidUntil;
@@ -571,6 +612,7 @@ class InternalLicenseResponse {
   final String tableId;
 
   InternalLicenseResponse({
+    this.cameraDeviceId,
     required this.clientId,
     required this.graceUntil,
     required this.paidUntil,
@@ -580,6 +622,7 @@ class InternalLicenseResponse {
 
   factory InternalLicenseResponse.fromJson(Map<String, dynamic> json) =>
       InternalLicenseResponse(
+        cameraDeviceId: json["camera_device_id"],
         clientId: json["client_id"],
         graceUntil: DateTime.parse(json["grace_until"]),
         paidUntil: DateTime.parse(json["paid_until"]),
@@ -588,6 +631,7 @@ class InternalLicenseResponse {
       );
 
   Map<String, dynamic> toJson() => {
+    "camera_device_id": cameraDeviceId,
     "client_id": clientId,
     "grace_until": graceUntil.toIso8601String(),
     "paid_until": paidUntil.toIso8601String(),
@@ -2235,6 +2279,60 @@ final signalingConsumeResultMessageTypeValues = EnumValues({
       SignalingConsumeResultMessageType.SIGNALING_CONSUME_RESULT,
 });
 
+///Server -> viewer: a consumer is gone (the camera stopped or was replaced, or the license
+///blocked the stream); close it on the Device.
+class SignalingConsumerClosedMessage {
+  final String id;
+  final SignalingConsumerClosedPayload payload;
+  final String tableId;
+  final int ts;
+  final SignalingConsumerClosedMessageType type;
+
+  SignalingConsumerClosedMessage({
+    required this.id,
+    required this.payload,
+    required this.tableId,
+    required this.ts,
+    required this.type,
+  });
+
+  factory SignalingConsumerClosedMessage.fromJson(Map<String, dynamic> json) =>
+      SignalingConsumerClosedMessage(
+        id: json["id"],
+        payload: SignalingConsumerClosedPayload.fromJson(json["payload"]),
+        tableId: json["table_id"],
+        ts: json["ts"],
+        type: signalingConsumerClosedMessageTypeValues.map[json["type"]]!,
+      );
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "payload": payload.toJson(),
+    "table_id": tableId,
+    "ts": ts,
+    "type": signalingConsumerClosedMessageTypeValues.reverse[type],
+  };
+}
+
+class SignalingConsumerClosedPayload {
+  ///mediasoup object id.
+  final String consumerId;
+
+  SignalingConsumerClosedPayload({required this.consumerId});
+
+  factory SignalingConsumerClosedPayload.fromJson(Map<String, dynamic> json) =>
+      SignalingConsumerClosedPayload(consumerId: json["consumer_id"]);
+
+  Map<String, dynamic> toJson() => {"consumer_id": consumerId};
+}
+
+enum SignalingConsumerClosedMessageType { SIGNALING_CONSUMER_CLOSED }
+
+final signalingConsumerClosedMessageTypeValues = EnumValues({
+  "signaling.consumer_closed":
+      SignalingConsumerClosedMessageType.SIGNALING_CONSUMER_CLOSED,
+});
+
 ///Client -> server: create a WebRTC transport. Camera: send, viewer: recv.
 class SignalingCreateTransportMessage {
   final String id;
@@ -2765,6 +2863,68 @@ enum SignalingJoinResultMessageType { SIGNALING_JOIN_RESULT }
 
 final signalingJoinResultMessageTypeValues = EnumValues({
   "signaling.join.result": SignalingJoinResultMessageType.SIGNALING_JOIN_RESULT,
+});
+
+///Server -> viewers: the table's camera publishes (on join, or after the phone was
+///replaced); consume it with signaling.consume.
+class SignalingNewProducerMessage {
+  final String id;
+  final SignalingNewProducerPayload payload;
+  final String tableId;
+  final int ts;
+  final SignalingNewProducerMessageType type;
+
+  SignalingNewProducerMessage({
+    required this.id,
+    required this.payload,
+    required this.tableId,
+    required this.ts,
+    required this.type,
+  });
+
+  factory SignalingNewProducerMessage.fromJson(Map<String, dynamic> json) =>
+      SignalingNewProducerMessage(
+        id: json["id"],
+        payload: SignalingNewProducerPayload.fromJson(json["payload"]),
+        tableId: json["table_id"],
+        ts: json["ts"],
+        type: signalingNewProducerMessageTypeValues.map[json["type"]]!,
+      );
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "payload": payload.toJson(),
+    "table_id": tableId,
+    "ts": ts,
+    "type": signalingNewProducerMessageTypeValues.reverse[type],
+  };
+}
+
+class SignalingNewProducerPayload {
+  final MediaKind kind;
+
+  ///mediasoup object id.
+  final String producerId;
+
+  SignalingNewProducerPayload({required this.kind, required this.producerId});
+
+  factory SignalingNewProducerPayload.fromJson(Map<String, dynamic> json) =>
+      SignalingNewProducerPayload(
+        kind: mediaKindValues.map[json["kind"]]!,
+        producerId: json["producer_id"],
+      );
+
+  Map<String, dynamic> toJson() => {
+    "kind": mediaKindValues.reverse[kind],
+    "producer_id": producerId,
+  };
+}
+
+enum SignalingNewProducerMessageType { SIGNALING_NEW_PRODUCER }
+
+final signalingNewProducerMessageTypeValues = EnumValues({
+  "signaling.new_producer":
+      SignalingNewProducerMessageType.SIGNALING_NEW_PRODUCER,
 });
 
 ///Camera -> server: publish the video track (from the send transport's produce event).

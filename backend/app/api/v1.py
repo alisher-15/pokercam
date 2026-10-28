@@ -36,8 +36,6 @@ from app.services.ratelimit import RateLimiter
 router = APIRouter(prefix="/api/v1", responses=ERRORS)
 
 PAIRING_CODE_TTL = timedelta(minutes=5)
-# A camera counts as online if it was heard from this recently. Stage 3: media-server reports it live.
-CAMERA_ONLINE_WINDOW = timedelta(seconds=90)
 
 # SPEC 9.2: at most 5 code attempts a minute from one IP. Activation keys get the same guard.
 pairing_limiter = RateLimiter(limit=5)
@@ -219,7 +217,7 @@ def get_license(claims: ClaimsDep, session: SessionDep) -> LicenseResponse:
 
 @router.get("/tables", **_NO_NULLS)
 def list_tables(claims: ViewerDep, session: SessionDep) -> TableListResponse:
-    now = _now()
+    """Tables with their cameras: online while the camera publishes to media-server (it reports that)."""
     tables = session.scalars(
         select(PokerTable).where(PokerTable.client_id == claims.client_id).order_by(PokerTable.number)
     ).all()
@@ -232,14 +230,13 @@ def list_tables(claims: ViewerDep, session: SessionDep) -> TableListResponse:
     items = []
     for table in tables:
         camera = cameras.get(table.id)
-        seen = camera.last_seen_at if camera else None
         items.append(
             TableInfo(
                 id=table.id,
                 name=table.name,
                 number=table.number,
-                camera_online=seen is not None and now - seen <= CAMERA_ONLINE_WINDOW,
-                camera_last_seen_at=seen,
+                camera_online=table.camera_connected_at is not None,
+                camera_last_seen_at=camera.last_seen_at if camera else None,
             )
         )
     return TableListResponse(tables=items)

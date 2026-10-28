@@ -26,6 +26,10 @@
     },
     "grace_until": {
       "$ref": "../common.json#/definitions/DateTime"
+    },
+    "camera_device_id": {
+      "$ref": "../common.json#/definitions/Uuid",
+      "description": "The phone paired to the table now; media-server lets only this device publish. Absent when no phone is paired."
     }
   }
 }

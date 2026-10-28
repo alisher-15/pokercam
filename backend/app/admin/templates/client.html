@@ -15,6 +15,9 @@
     <form method="post" action="/admin/clients/{{ client.id }}/extend" class="inline">
       <button class="primary">{{ t('license.extend') }}</button>
     </form>
+    <form method="post" action="/admin/clients/{{ client.id }}/apply-now" class="inline">
+      <button>{{ t('license.apply_now') }}</button>
+    </form>
     <form method="post" action="/admin/clients/{{ client.id }}/paid-until" class="inline">
       <input name="paid_until" type="date" required>
       <button>{{ t('license.set_date') }}</button>

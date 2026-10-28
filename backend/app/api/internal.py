@@ -5,15 +5,16 @@ import uuid
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, Header, Response
+from sqlalchemy import select, update
 
 from app.api.deps import SessionDep
 from app.api.errors import ERRORS, ApiException
 from app.config import get_settings
+from app.contracts.rest.internal_camera_presence_request import InternalCameraPresenceRequest
 from app.contracts.rest.internal_jwt_key_response import InternalJwtKeyResponse
 from app.contracts.rest.internal_license_response import InternalLicenseResponse
-from app.models import License, PokerTable
+from app.models import Device, License, PokerTable
 from app.security import public_key_pem
 from app.services import licenses
 
@@ -27,20 +28,44 @@ def _internal_only(x_internal_token: Annotated[str | None, Header()] = None) -> 
 router = APIRouter(prefix="/api/v1/internal", responses=ERRORS, dependencies=[Depends(_internal_only)])
 
 
-@router.get("/tables/{table_id}/license")
-def table_license(table_id: uuid.UUID, session: SessionDep) -> InternalLicenseResponse:
-    """media-server asks this when a room starts and every 10 minutes (SPEC 7.1)."""
+def _table(session: SessionDep, table_id: uuid.UUID) -> PokerTable:
     table = session.get(PokerTable, table_id)
     if table is None:
         raise ApiException(404, "table_not_found", "No such table")
+    return table
+
+
+@router.get("/tables/{table_id}/license", response_model_exclude_none=True)
+def table_license(table_id: uuid.UUID, session: SessionDep) -> InternalLicenseResponse:
+    """media-server asks this when a room starts, when a phone joins and every 10 minutes (SPEC 7.1)."""
+    table = _table(session, table_id)
     license_ = session.scalars(select(License).where(License.client_id == table.client_id)).one()
+    camera = session.scalar(select(Device.id).where(Device.table_id == table.id, Device.revoked_at.is_(None)))
     return InternalLicenseResponse(
         table_id=table.id,
         client_id=table.client_id,
         status=licenses.status(datetime.now(UTC), license_.paid_until, license_.suspended),
         paid_until=license_.paid_until,
         grace_until=licenses.grace_until(license_.paid_until),
+        camera_device_id=camera,
     )
+
+
+@router.put("/tables/{table_id}/camera", status_code=204)
+def camera_presence(table_id: uuid.UUID, body: InternalCameraPresenceRequest, session: SessionDep) -> Response:
+    """The table's camera started or stopped publishing: GET /api/v1/tables shows it to the PCs."""
+    table = _table(session, table_id)
+    table.camera_connected_at = datetime.now(UTC) if body.online else None
+    session.commit()
+    return Response(status_code=204)
+
+
+@router.post("/media-server/started", status_code=204)
+def media_server_started(session: SessionDep) -> Response:
+    """media-server (re)started with no cameras: whatever it reported before is stale."""
+    session.execute(update(PokerTable).values(camera_connected_at=None))
+    session.commit()
+    return Response(status_code=204)
 
 
 @router.get("/jwt-key")

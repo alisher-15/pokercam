@@ -15,6 +15,7 @@ import type {
   SignalingConnectTransportResultMessage,
   SignalingConsumeMessage,
   SignalingConsumeResultMessage,
+  SignalingConsumerClosedMessage,
   SignalingCreateTransportMessage,
   SignalingCreateTransportResultMessage,
   SignalingErrorMessage,
@@ -22,6 +23,7 @@ import type {
   SignalingGetRouterRtpCapabilitiesResultMessage,
   SignalingJoinMessage,
   SignalingJoinResultMessage,
+  SignalingNewProducerMessage,
   SignalingProduceMessage,
   SignalingProduceResultMessage,
   SignalingResumeMessage,
@@ -44,6 +46,7 @@ export type Message =
   | SignalingConnectTransportResultMessage
   | SignalingConsumeMessage
   | SignalingConsumeResultMessage
+  | SignalingConsumerClosedMessage
   | SignalingCreateTransportMessage
   | SignalingCreateTransportResultMessage
   | SignalingErrorMessage
@@ -51,6 +54,7 @@ export type Message =
   | SignalingGetRouterRtpCapabilitiesResultMessage
   | SignalingJoinMessage
   | SignalingJoinResultMessage
+  | SignalingNewProducerMessage
   | SignalingProduceMessage
   | SignalingProduceResultMessage
   | SignalingResumeMessage

@@ -24,6 +24,7 @@ Object? decodeMessage(Map<String, dynamic> json) => switch (json['type']) {
     SignalingConnectTransportResultMessage.fromJson(json),
   'signaling.consume' => SignalingConsumeMessage.fromJson(json),
   'signaling.consume.result' => SignalingConsumeResultMessage.fromJson(json),
+  'signaling.consumer_closed' => SignalingConsumerClosedMessage.fromJson(json),
   'signaling.create_transport' => SignalingCreateTransportMessage.fromJson(
     json,
   ),
@@ -36,6 +37,7 @@ Object? decodeMessage(Map<String, dynamic> json) => switch (json['type']) {
     SignalingGetRouterRtpCapabilitiesResultMessage.fromJson(json),
   'signaling.join' => SignalingJoinMessage.fromJson(json),
   'signaling.join.result' => SignalingJoinResultMessage.fromJson(json),
+  'signaling.new_producer' => SignalingNewProducerMessage.fromJson(json),
   'signaling.produce' => SignalingProduceMessage.fromJson(json),
   'signaling.produce.result' => SignalingProduceResultMessage.fromJson(json),
   'signaling.resume' => SignalingResumeMessage.fromJson(json),

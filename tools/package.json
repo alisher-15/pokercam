@@ -1,0 +1,29 @@
+{
+  "name": "tools",
+  "private": true,
+  "type": "module",
+  "description": "Test tools: a fake camera and fake viewers (headless Chromium + mediasoup-client), acceptance checks, later the load test.",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "fake-camera": "node fake_camera/index.ts",
+    "fake-viewer": "node fake_viewer/index.ts",
+    "acceptance": "node acceptance/stage3.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.19.2",
+    "esbuild": "0.28.2",
+    "eslint": "10.13.0",
+    "mediasoup-client": "3.25.3",
+    "playwright": "1.63.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}

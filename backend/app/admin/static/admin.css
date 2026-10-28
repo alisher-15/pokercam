@@ -21,6 +21,7 @@ button.primary { background: var(--accent); color: #fff; border: 0; border-radiu
 button.danger { color: var(--danger); }
 .muted { color: var(--muted); }
 .error { color: var(--danger); font-weight: 600; }
+.notice { color: var(--ok); font-weight: 600; }
 .key { font: 600 24px/1.2 ui-monospace, monospace; letter-spacing: 2px; }
 .status { padding: 1px 8px; border-radius: 10px; font-size: 13px; }
 .status.active { background: #1b7f3b22; color: var(--ok); }

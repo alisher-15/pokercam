@@ -34,10 +34,12 @@ def _operations(openapi: dict):
 
 def test_every_body_is_a_contract_model(openapi: dict) -> None:
     operations = list(_operations(openapi))
-    assert len(operations) == 9
+    assert len(operations) == 11
     for name, operation in operations:
-        response = _ref(operation["responses"]["200"]["content"]["application/json"]["schema"])
-        assert response in TITLES, name
+        if "204" in operation["responses"]:
+            assert "content" not in operation["responses"]["204"], name
+        else:
+            assert _ref(operation["responses"]["200"]["content"]["application/json"]["schema"]) in TITLES, name
         if "requestBody" in operation:
             assert _ref(operation["requestBody"]["content"]["application/json"]["schema"]) in TITLES, name
         assert _ref(operation["responses"]["401"]["content"]["application/json"]["schema"]) == "ErrorResponse", name
@@ -69,6 +71,8 @@ def test_openapi_lists_the_spec_endpoints(openapi: dict) -> None:
         ("/api/v1/brand", "get"),
         ("/api/v1/internal/tables/{table_id}/license", "get"),
         ("/api/v1/internal/jwt-key", "get"),
+        ("/api/v1/internal/tables/{table_id}/camera", "put"),
+        ("/api/v1/internal/media-server/started", "post"),
     ]:
         assert method in openapi["paths"][path], path
     assert not any(path.startswith("/admin") for path in openapi["paths"])

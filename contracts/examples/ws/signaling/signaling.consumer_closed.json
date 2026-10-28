@@ -1,0 +1,9 @@
+{
+  "type": "signaling.consumer_closed",
+  "id": "m-0027",
+  "ts": 1793180000027,
+  "table_id": "3f1c2a9e-8b7d-4c61-9a52-0e4b7d2c1f88",
+  "payload": {
+    "consumer_id": "c-1"
+  }
+}

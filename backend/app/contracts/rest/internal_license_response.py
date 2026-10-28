@@ -26,3 +26,7 @@ class InternalLicenseResponse(BaseModel):
     """
     RFC 3339 date and time with a time zone.
     """
+    camera_device_id: UUID | None = None
+    """
+    The phone paired to the table now; media-server lets only this device publish. Absent when no phone is paired.
+    """

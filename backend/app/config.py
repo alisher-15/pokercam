@@ -29,8 +29,10 @@ class Settings(BaseSettings):
     access_token_ttl: int = 12 * 3600
     # HMAC key for activation keys, pairing codes and device ids. Changing it voids every activation key.
     hash_secret: str = DEV_HASH_SECRET
-    # media-server sends it to /api/v1/internal/*.
+    # media-server sends it to /api/v1/internal/*, the backend sends it to media-server's /internal/*.
     internal_api_token: str = DEV_INTERNAL_API_TOKEN
+    # Where the backend reaches media-server («Применить сейчас» in the admin panel).
+    media_server_url: str = "http://localhost:3000"
     # Signs the admin session cookie. Development without it: a new one at every start.
     admin_session_secret: str = ""
     # First admin, created by `python -m app.cli seed`.
