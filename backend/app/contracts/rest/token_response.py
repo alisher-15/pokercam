@@ -16,3 +16,7 @@ class TokenResponse(BaseModel):
     """
     Seconds.
     """
+    media_url: str = Field(..., pattern="^wss?://")
+    """
+    WebSocket URL of media-server (signaling and control, SPEC 5.3), e.g. wss://media.example.com/ws. Sent with every token, so clients follow a server move at the next refresh.
+    """

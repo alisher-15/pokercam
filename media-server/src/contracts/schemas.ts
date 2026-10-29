@@ -573,7 +573,8 @@ export const schemas: Record<string, object> = {
     "required": [
       "access_token",
       "token_type",
-      "expires_in"
+      "expires_in",
+      "media_url"
     ],
     "properties": {
       "access_token": {
@@ -587,6 +588,11 @@ export const schemas: Record<string, object> = {
         "type": "integer",
         "minimum": 1,
         "description": "Seconds."
+      },
+      "media_url": {
+        "type": "string",
+        "pattern": "^wss?://",
+        "description": "WebSocket URL of media-server (signaling and control, SPEC 5.3), e.g. wss://media.example.com/ws. Sent with every token, so clients follow a server move at the next refresh."
       }
     }
   },

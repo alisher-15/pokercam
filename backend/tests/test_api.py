@@ -72,6 +72,8 @@ def test_token_response_shape(client: TestClient, make_club) -> None:
     response = client.post("/api/v1/auth/token", json={"refresh_token": activate(client, club.key)["refresh_token"]})
     assert response.json()["token_type"] == "bearer"
     assert response.json()["expires_in"] == 12 * 3600
+    # Where the apps open the WebSocket: PUBLIC_MEDIA_URL, with every token (a server move reaches them).
+    assert response.json()["media_url"] == "ws://localhost:3000/ws"
 
 
 def test_viewer_cannot_get_a_token_for_another_clubs_table(client: TestClient, make_club) -> None:

@@ -784,23 +784,31 @@ class TokenResponse {
 
   ///Seconds.
   final int expiresIn;
+
+  ///WebSocket URL of media-server (signaling and control, SPEC 5.3), e.g.
+  ///wss://media.example.com/ws. Sent with every token, so clients follow a server move at the
+  ///next refresh.
+  final String mediaUrl;
   final TokenType tokenType;
 
   TokenResponse({
     required this.accessToken,
     required this.expiresIn,
+    required this.mediaUrl,
     required this.tokenType,
   });
 
   factory TokenResponse.fromJson(Map<String, dynamic> json) => TokenResponse(
     accessToken: json["access_token"],
     expiresIn: json["expires_in"],
+    mediaUrl: json["media_url"],
     tokenType: tokenTypeValues.map[json["token_type"]]!,
   );
 
   Map<String, dynamic> toJson() => {
     "access_token": accessToken,
     "expires_in": expiresIn,
+    "media_url": mediaUrl,
     "token_type": tokenTypeValues.reverse[tokenType],
   };
 }

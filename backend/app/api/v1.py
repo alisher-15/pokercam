@@ -201,7 +201,9 @@ def issue_token(body: TokenRequest, session: SessionDep) -> TokenResponse:
             "lic": lic.value,
         }
     )
-    return TokenResponse(access_token=token, token_type="bearer", expires_in=ttl)
+    return TokenResponse(
+        access_token=token, token_type="bearer", expires_in=ttl, media_url=get_settings().public_media_url
+    )
 
 
 @router.get("/license", **_NO_NULLS)

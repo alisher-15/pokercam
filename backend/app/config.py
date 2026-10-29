@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     internal_api_token: str = DEV_INTERNAL_API_TOKEN
     # Where the backend reaches media-server («Применить сейчас» in the admin panel).
     media_server_url: str = "http://localhost:3000"
+    # Where phones and PCs reach media-server's WebSocket; sent with every access token.
+    public_media_url: str = "ws://localhost:3000/ws"
     # Signs the admin session cookie. Development without it: a new one at every start.
     admin_session_secret: str = ""
     # First admin, created by `python -m app.cli seed`.
