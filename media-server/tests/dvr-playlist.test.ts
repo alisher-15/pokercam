@@ -106,6 +106,16 @@ describe("the table's window", () => {
     expect(index.range()).toEqual({ from: 1000, to: 2500 });
   });
 
+  test("a run's clock correction shifts its program date-times and the range", () => {
+    const index = new DvrIndex(10);
+    index.add(1, segment(0, 10_000));
+    index.add(2, segment(0, 20_000));
+    index.setClockOffset(1, -900);
+    expect(index.range()).toEqual({ from: 9100, to: 21_000 });
+    expect(index.render()).toContain(`#EXT-X-PROGRAM-DATE-TIME:${new Date(9100).toISOString()}\n`);
+    expect(index.render()).toContain(`#EXT-X-PROGRAM-DATE-TIME:${new Date(20_000).toISOString()}\n`);
+  });
+
   test("the target duration only grows", () => {
     const index = new DvrIndex(2);
     index.add(1, { ...segment(0), durationS: 2.6 });

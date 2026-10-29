@@ -60,6 +60,8 @@ export class DvrIndex {
   private readonly entries: DvrEntry[] = [];
   /** `r{run}/{uri}` of every entry, for serving only what the playlist lists. */
   private readonly paths = new Set<string>();
+  /** Per run, ms to add to FFmpeg's program date-times so they match the wall clock (see setClockOffset). */
+  private readonly offsets = new Map<number, number>();
   private nextMediaSequence = 0;
   private discontinuitySequence = 0;
   private lastRun: number | undefined;
@@ -94,6 +96,8 @@ export class DvrIndex {
     this.targetDuration = Math.max(this.targetDuration, Math.ceil(segment.durationS));
     const removed = this.entries.splice(0, Math.max(0, this.entries.length - this.capacity));
     for (const e of removed) this.paths.delete(path(e.run, e.uri));
+    const live = this.liveRuns();
+    for (const r of this.offsets.keys()) if (!live.has(r)) this.offsets.delete(r);
     // RFC 8216 6.2.2: dropping a segment that carries EXT-X-DISCONTINUITY bumps the sequence.
     this.discontinuitySequence += removed.filter((e) => e.discontinuity).length;
     return removed;
@@ -102,6 +106,20 @@ export class DvrIndex {
   /** Runs that still have segments in the window. */
   liveRuns(): Set<number> {
     return new Set(this.entries.map((e) => e.run));
+  }
+
+  /**
+   * FFmpeg stamps a run's first segment with the time it wrote the output header, after probing the input,
+   * so its program date-times run ahead of the real moment (about 0.9 s). The recorder measures that from
+   * when segments actually appear and sets the run's correction here (SPEC 8.3: −5 s is exactly 5 s ago).
+   */
+  setClockOffset(run: number, ms: number): void {
+    this.offsets.set(run, ms);
+  }
+
+  /** An entry's program date-time on the wall clock, epoch ms. */
+  programDateTime(entry: DvrEntry): number {
+    return entry.programDateTime + (this.offsets.get(entry.run) ?? 0);
   }
 
   /** Whether the playlist lists this segment now. */
@@ -114,7 +132,7 @@ export class DvrIndex {
     const first = this.first;
     const last = this.last;
     if (!first || !last) return undefined;
-    return { from: first.programDateTime, to: Math.round(last.programDateTime + last.durationS * 1000) };
+    return { from: Math.round(this.programDateTime(first)), to: Math.round(this.programDateTime(last) + last.durationS * 1000) };
   }
 
   /** The sliding-window playlist; segment URIs are relative to it (`r{run}/{file}`). */
@@ -133,7 +151,7 @@ export class DvrIndex {
       if (entry.run !== run) lines.push(`#EXT-X-MAP:URI="r${String(entry.run)}/init.mp4"`);
       run = entry.run;
       lines.push(
-        `#EXT-X-PROGRAM-DATE-TIME:${new Date(entry.programDateTime).toISOString()}`,
+        `#EXT-X-PROGRAM-DATE-TIME:${new Date(Math.round(this.programDateTime(entry))).toISOString()}`,
         `#EXTINF:${entry.durationS.toFixed(3)},`,
         `r${String(entry.run)}/${entry.uri}`,
       );

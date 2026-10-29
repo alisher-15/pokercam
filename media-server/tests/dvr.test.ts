@@ -104,6 +104,18 @@ describe("recording", () => {
     expect((await get(`/dvr/${table}/r1/init.mp4`, jwt)).status).toBe(200);
   }, 20_000);
 
+  test("program date-times follow the wall clock: a new segment ends about now", async () => {
+    const dvr = server.dvr?.table(table);
+    if (!dvr) throw new Error("no DVR");
+    // After the run's clock correction has its samples, catch the moment a segment appears.
+    await until("15 segments", () => (dvr.index.last?.mediaSequence ?? 0) >= 15, 20_000);
+    const seen = dvr.index.last?.mediaSequence;
+    await until("the next segment", () => dvr.index.last?.mediaSequence !== seen, 3000);
+    const end = dvr.index.range()?.to ?? 0;
+    expect(Date.now() - end).toBeGreaterThan(-300);
+    expect(Date.now() - end).toBeLessThan(600);
+  }, 25_000);
+
   test("a viewer joining later gets dvr.info with the buffer's bounds", async () => {
     const late = await viewer(table);
     const info = await late.next("dvr.info");

@@ -13,6 +13,8 @@ const KEYFRAME_INTERVAL_MS = 1000;
 /** SPEC 7.4: a killed FFmpeg must be writing again within 5 s. */
 const STALL_TIMEOUT_MS = 5000;
 const POLL_MS = 250;
+/** Segments a run's clock correction is measured on. */
+const CLOCK_SAMPLES = 15;
 const MAX_RESTART_DELAY_MS = 5000;
 const STOP_TIMEOUT_MS = 3000;
 
@@ -76,6 +78,8 @@ interface Run {
   stopping: boolean;
   exited: Promise<void>;
   stderr: string[];
+  /** When its first segments appeared minus their program date-time ends, ms (see DvrIndex.setClockOffset). */
+  lags: number[];
 }
 
 /** A camera's stream being recorded: the PlainTransport consumer and the FFmpeg runs reading it. */
@@ -219,6 +223,7 @@ export class TableDvr {
       stopping: false,
       exited: Promise.resolve(),
       stderr: [],
+      lags: [],
     };
     recording.run = run;
     recording.lastSegmentAt = Date.now();
@@ -303,6 +308,12 @@ export class TableDvr {
         run.seen = segment.sequence;
         run.segments++;
         recording.lastSegmentAt = Date.now();
+        if (run.lags.length < CLOCK_SAMPLES) {
+          // A segment is written when the next keyframe arrives, so it shows up when it ends (+ half a poll on average).
+          run.lags.push(Date.now() - POLL_MS / 2 - (segment.programDateTime + segment.durationS * 1000));
+          const sorted = [...run.lags].sort((a, b) => a - b);
+          this.index.setClockOffset(run.id, sorted[Math.floor(sorted.length / 2)] ?? 0);
+        }
         for (const old of this.index.add(run.id, segment)) {
           await rm(join(this.dir, `r${String(old.run)}`, old.uri), { force: true });
         }

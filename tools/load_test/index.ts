@@ -35,7 +35,7 @@ const maxGrowthMb = Number(args["max-growth"]);
 
 /**
  * Runs where media-server runs (in its container, or here for a host process) and prints the summed
- * RSS and CPU ticks of the server's processes, and the DVR directory's use of its file system.
+ * RSS and CPU ticks of the server's processes, and the size of the files in the DVR directory.
  */
 const SNAPSHOT = `
 const fs = require("fs");
@@ -55,8 +55,10 @@ if (root) {
   for (let grew = true; grew; ) { grew = false; for (const s of stats) if (!tree.has(s.pid) && tree.has(s.ppid)) { tree.add(s.pid); grew = true; } }
   mine = stats.filter((s) => tree.has(s.pid));
 }
-let dvrMb = 0;
-try { const fsInfo = fs.statfsSync(dvr); dvrMb = ((fsInfo.blocks - fsInfo.bfree) * fsInfo.bsize) / 1048576; } catch {}
+let dvrBytes = 0;
+const walk = (dir) => { for (const e of fs.readdirSync(dir, { withFileTypes: true })) { const p = dir + "/" + e.name; try { if (e.isDirectory()) walk(p); else dvrBytes += fs.statSync(p).size; } catch {} } };
+try { walk(dvr); } catch {}
+const dvrMb = dvrBytes / 1048576;
 console.log(JSON.stringify({ rssKb: mine.reduce((a, s) => a + s.rssKb, 0), ticks: mine.reduce((a, s) => a + s.ticks, 0), procs: mine.length, dvrMb }));
 `;
 
