@@ -18,7 +18,7 @@
 | 2. Backend | готов, ждёт приёмки (ветка `stage-2/backend`) |
 | 3. Media-server | готов, ждёт приёмки (ветка `stage-3/media-server`) |
 | 4. DVR | готов, ждёт приёмки (ветка `stage-4/dvr`); 12-часовой прогон пилота — на сервере |
-| 5. Android | не начат |
+| 5. Android | в работе (ветка `stage-5/android`): приложение собрано, сквозной прогон на эмуляторе — в CI; нужна проверка на планшете/телефоне |
 | 6. Windows: live | не начат |
 | 7. Windows: DVR | не начат |
 | 8. White-label | не начат |
@@ -39,6 +39,8 @@ make acceptance  # после make dev: фейковая камера + MAX_VIEW
 make acceptance-dvr  # после make dev: DVR 11 минут, kill FFmpeg, доступ, лицензия (этап 4)
 make load-test LOAD_MINUTES=60  # после make dev: нагрузка, память и CPU media-server
 ```
+
+Установка на сервер (VPS или мини-ПК с Ubuntu): [deploy/README.md](deploy/README.md).
 
 Админка: http://localhost:8000/admin (вход — `ADMIN_EMAIL` / `ADMIN_PASSWORD` из `.env`), API: http://localhost:8000/docs. Для production: `make keys >> .env` и `ENVIRONMENT=production`.
 
