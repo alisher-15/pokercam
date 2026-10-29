@@ -24,6 +24,15 @@ export interface BotState {
   producerId: string | null;
   acks: { request_id: string; ok: boolean }[];
   cameraSets: number;
+  /** Viewer: the latest dvr.info. */
+  dvr: { from: number; to: number; url: string } | null;
+  /** RTP packets lost on the way: camera → server (as the server reports back), server → viewer. */
+  packetsLost: number;
+  /** Viewer: frames received but not shown, and video freezes WebRTC counted. */
+  framesDropped: number;
+  freezes: number;
+  /** Camera: why the encoder sends less than asked (cpu, bandwidth) or "none". */
+  qualityLimitation: string | null;
 }
 
 interface Envelope {
@@ -48,6 +57,11 @@ const state: BotState = {
   producerId: null,
   acks: [],
   cameraSets: 0,
+  dvr: null,
+  packetsLost: 0,
+  framesDropped: 0,
+  freezes: 0,
+  qualityLimitation: null,
 };
 
 let ws: WebSocket;
@@ -100,6 +114,13 @@ function onMessage(msg: Envelope): void {
       state.cameraSets++;
       send("camera.ack", { request_id: msg.id, ok: true, applied: (msg.payload as { control: unknown }).control });
       send("camera.state", { controls: { [String(msg.payload.param)]: msg.payload.control } });
+      return;
+    case "dvr.info":
+      state.dvr = {
+        from: Number(msg.payload.available_from),
+        to: Number(msg.payload.available_to),
+        url: String(msg.payload.playlist_url),
+      };
       return;
     case "camera.ack":
       state.acks.push({ request_id: String(msg.payload.request_id), ok: Boolean(msg.payload.ok) });
@@ -185,6 +206,14 @@ async function refreshStats(): Promise<void> {
   state.height = Number(rtp.frameHeight ?? 0);
   state.fps = Number(rtp.framesPerSecond ?? 0);
   state.frames = Number((config.role === "camera" ? rtp.framesEncoded : rtp.framesDecoded) ?? 0);
+  if (config.role === "camera") {
+    state.packetsLost = Number(reports.find((r) => r.type === "remote-inbound-rtp")?.packetsLost ?? 0);
+    state.qualityLimitation = typeof rtp.qualityLimitationReason === "string" ? rtp.qualityLimitationReason : null;
+  } else {
+    state.packetsLost = Number(rtp.packetsLost ?? 0);
+    state.framesDropped = Number(rtp.framesDropped ?? 0);
+    state.freezes = Number(rtp.freezeCount ?? 0);
+  }
 }
 
 async function start(cfg: BotConfig): Promise<void> {

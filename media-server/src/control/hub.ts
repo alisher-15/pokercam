@@ -61,4 +61,6 @@ export function welcome(room: Room, viewer: Peer): void {
   if (room.producer) {
     viewer.send(message("signaling.new_producer", room.tableId, { producer_id: room.producer.id, kind: "video" }));
   }
+  const dvr = room.dvrInfo();
+  if (dvr) viewer.send(dvr);
 }

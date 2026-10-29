@@ -56,6 +56,11 @@ services:
       RTC_PORT_MIN: ${RTC_PORT_MIN:-40000}
       RTC_PORT_MAX: ${RTC_PORT_MAX:-40003}
       MAX_VIEWERS_PER_TABLE: ${MAX_VIEWERS_PER_TABLE:-5}
+      LICENSE_CHECK_INTERVAL_S: ${LICENSE_CHECK_INTERVAL_S:-600}
+      DVR_DIR: /dvr
+    # SPEC 7.2: the DVR buffer lives in RAM, about 300 MB per table (DVR_TMPFS_SIZE in .env).
+    tmpfs:
+      - /dvr:size=${DVR_TMPFS_SIZE:-512m},mode=1777
     ports:
       - "${MEDIA_SERVER_PORT:-3000}:3000"
       # WebRTC: one UDP+TCP port per mediasoup worker; clients reach them at RTC_ANNOUNCED_ADDRESS.

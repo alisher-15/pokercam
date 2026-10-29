@@ -1,6 +1,7 @@
 import type { Logger } from "pino";
 import type { BackendClient } from "../backend.js";
 import type { Config } from "../config.js";
+import type { DvrManager } from "../dvr/manager.js";
 import { Room, type RoomLicense } from "./room.js";
 import type { WorkerPool } from "./workers.js";
 
@@ -14,6 +15,7 @@ export class RoomRegistry {
     private readonly backend: BackendClient,
     private readonly config: Pick<Config, "maxViewersPerTable" | "licenseCheckIntervalMs">,
     private readonly log: Logger,
+    private readonly dvr?: DvrManager,
   ) {}
 
   find(tableId: string): Room | undefined {
@@ -43,6 +45,7 @@ export class RoomRegistry {
     const { router, webRtcServer } = await this.pool.createRouter();
     const room = new Room(tableId, router, webRtcServer, fromToken, {
       backend: this.backend,
+      dvr: this.dvr,
       log: this.log,
       maxViewers: this.config.maxViewersPerTable,
       licenseCheckIntervalMs: this.config.licenseCheckIntervalMs,

@@ -1,6 +1,9 @@
 import { timingSafeEqual } from "node:crypto";
-import { createServer, type Server, type ServerResponse } from "node:http";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { Logger } from "pino";
+
+/** Handles a request it recognizes and returns true; false passes it on. */
+export type Route = (req: IncomingMessage, res: ServerResponse) => boolean;
 
 export interface InternalApi {
   token: string;
@@ -22,15 +25,16 @@ function tokenOk(given: string | string[] | undefined, expected: string): boolea
 const LICENSE_CHECK = /^\/internal\/tables\/([0-9a-f-]{36})\/license-check$/;
 
 /**
- * HTTP endpoints of media-server: the health check, and /internal/* for the backend
- * («Применить сейчас» in the admin panel). The WebSocket at /ws is attached by SignalingServer.
+ * HTTP endpoints of media-server: the health check, /internal/* for the backend («Применить сейчас»
+ * in the admin panel) and `routes` such as the DVR's. The WebSocket at /ws is attached by SignalingServer.
  */
-export function createHttpServer(log: Logger, internal?: InternalApi): Server {
+export function createHttpServer(log: Logger, internal?: InternalApi, routes: Route[] = []): Server {
   return createServer((req, res) => {
     if (req.method === "GET" && req.url === "/health") {
       sendJson(res, 200, { status: "ok" });
       return;
     }
+    if (routes.some((route) => route(req, res))) return;
     const check = req.method === "POST" && internal ? LICENSE_CHECK.exec(req.url ?? "") : null;
     if (check && internal) {
       if (!tokenOk(req.headers["x-internal-token"], internal.token)) {

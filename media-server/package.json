@@ -2,7 +2,7 @@
   "name": "media-server",
   "private": true,
   "type": "module",
-  "description": "mediasoup SFU, control hub and DVR manager. Stage 0: process, health check, logs and message validation.",
+  "description": "mediasoup SFU: rooms, signaling, control hub, license checks and the DVR (FFmpeg → HLS).",
   "engines": {
     "node": ">=24"
   },

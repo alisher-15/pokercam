@@ -10,7 +10,7 @@ PYTHON ?= python3.12
 VENV := backend/.venv
 APPS := apps/shared apps/camera_android apps/viewer_windows
 
-.PHONY: help setup setup-backend setup-node setup-apps dev down logs db keys seed acceptance \
+.PHONY: help setup setup-backend setup-node setup-apps dev down logs db keys seed acceptance acceptance-dvr load-test \
 	test test-contracts test-backend test-media-server test-apps \
 	lint lint-backend lint-media-server lint-tools lint-apps codegen l10n check-generated
 
@@ -52,6 +52,20 @@ seed: ## Demo brand, client with a paid month, one table; admin from ADMIN_EMAIL
 acceptance: ## Against `make dev`: a fake camera and MAX_VIEWERS_PER_TABLE fake viewers (stage 3)
 	key=$$(docker compose exec -T backend python -m app.cli create-client "Acceptance $$(date +%s)") && \
 	cd tools && node acceptance/stage3.ts --key "$$key" --viewers $${MAX_VIEWERS_PER_TABLE:-5}
+
+acceptance-dvr: ## Against `make dev`: DVR for DVR_MINUTES (11) min, FFmpeg killed, access, expired license (stage 4)
+	docker compose exec -T backend python -m app.cli create-admin "$$ADMIN_EMAIL" "$$ADMIN_PASSWORD" > /dev/null && \
+	key=$$(docker compose exec -T backend python -m app.cli create-client "DVR $$(date +%s)") && \
+	other=$$(docker compose exec -T backend python -m app.cli create-client "DVR other $$(date +%s)") && \
+	cd tools && node acceptance/stage4.ts --key "$$key" --other-key "$$other" --minutes $${DVR_MINUTES:-11} \
+		--segments $${DVR_SEGMENTS:-600} --ffmpeg-container media-server \
+		--license-wait $$(( $${LICENSE_CHECK_INTERVAL_S:-600} + 30 ))
+
+load-test: ## Against `make dev`: LOAD_TABLES × LOAD_VIEWERS bots for LOAD_MINUTES, memory/CPU/losses (SPEC 7.4)
+	key=$$(docker compose exec -T backend python -m app.cli create-client "Load $$(date +%s)" --tables $${LOAD_TABLES:-1}) && \
+	container=$$(docker compose ps -q media-server) && \
+	cd tools && node load_test/index.ts --key "$$key" --tables $${LOAD_TABLES:-1} --viewers $${LOAD_VIEWERS:-1} \
+		--duration $${LOAD_MINUTES:-60} --server-container "$$container"
 
 test: db test-contracts test-backend test-media-server test-apps ## All tests of all components
 

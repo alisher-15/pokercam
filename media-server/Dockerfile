@@ -9,6 +9,10 @@ COPY src ./src
 RUN npm run build && npm prune --omit=dev
 
 FROM node:24-trixie-slim
+# SPEC 7.2: FFmpeg remuxes each table's RTP into the DVR's HLS segments.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
 WORKDIR /srv
 COPY package.json ./

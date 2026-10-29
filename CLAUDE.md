@@ -34,3 +34,5 @@ Android-телефон над столом -> медиа-сервер -> до 5 
 - make keys   — секреты для .env (в production без них backend не стартует)
 - make seed   — демо-бренд, клиент с оплаченным месяцем, 1 стол; админ из ADMIN_EMAIL / ADMIN_PASSWORD
 - make acceptance — после make dev: фейковая камера и MAX_VIEWERS_PER_TABLE ботов-зрителей (tools/), лишний получает room_full
+- make acceptance-dvr — после make dev: критерии 7.4 по DVR (11 минут записи, kill FFmpeg, доступ, просроченная лицензия)
+- make load-test — после make dev: LOAD_TABLES × LOAD_VIEWERS ботов на LOAD_MINUTES, память/CPU media-server, потери

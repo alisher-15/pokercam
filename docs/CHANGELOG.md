@@ -1,5 +1,43 @@
 # Changelog
 
+## Этап 4 «DVR» — 29.10.2026
+
+- **Запись** (SPEC 7.2): когда камера начинает публиковать, media-server создаёт для DVR PlainTransport-consumer на localhost и запускает FFmpeg. Тот читает RTP по SDP-файлу и без перекодирования пишет HLS: fMP4-сегменты по 1 с в tmpfs `/dvr/{table_id}/r{N}/`. Ключевой кадр запрашивается раз в секунду (ADR-4), поэтому сегменты ровно по ~1 с: за 11 минут — 600 сегментов, в среднем 1,000 с.
+- **Плейлист собирает media-server** (решение в SPEC 14): последние `DVR_SEGMENTS` (600) сегментов всех запусков FFmpeg, старые файлы удаляются; перед каждым новым запуском — `EXT-X-DISCONTINUITY` и свой init-сегмент, `EXT-X-DISCONTINUITY-SEQUENCE` по RFC 8216.
+- **Перезапуски**: FFmpeg упал — новый запуск сразу (повторные неудачи — с паузой до 5 с); завис (5 с без сегментов, пока идёт RTP) — убивается и перезапускается; новая камера стола или пауза камеры — новый запуск с разрывом. Камера ушла — буфер остаётся до конца (SPEC 8.5). Перезапуск media-server начинает буферы заново (SPEC 11.1).
+- **Раздача**: `GET /dvr/{table_id}/index.m3u8` и сегменты из него на порту media-server, `Authorization: Bearer <JWT зрителя этого стола>`. Без токена — 401; чужой стол или токен камеры — 403; лицензия заблокирована — 403 `license_blocked`; сегмент вне окна — 404.
+- **`dvr.info`** зрителям: при входе и раз в 5 с (границы буфера и адрес плейлиста).
+- **DVR только для H.264** (кодек телефона); VP8 идёт только в live.
+- **Docker**: в образе media-server — FFmpeg (пакет Debian); `/dvr` — tmpfs размером `DVR_TMPFS_SIZE` (512m для пилота, ≈300 МБ на стол). Новые настройки: `DVR_SEGMENTS`, `DVR_TMPFS_SIZE`, `LICENSE_CHECK_INTERVAL_S` в `.env.example`; `DVR_RTP_PORT_MIN/MAX` (30000–30999, четыре порта на стол, только внутри контейнера), `FFMPEG_PATH`, `DVR_ENABLED`.
+- **Проверки**: `make acceptance-dvr` (критерии 7.4: 11 минут записи, декодирование сегмента, kill -9 FFmpeg, доступ 401/403, просроченная лицензия) и `make load-test` (N столов × M зрителей: память и CPU процессов media-server, занятость tmpfs, потери пакетов, фризы, график SVG). Оба — в CI (DVR — в интеграционном прогоне, проверка лицензии там раз в 20 с). Unit- и интеграционные тесты media-server с настоящим FFmpeg.
+- Тесты media-server больше не берут случайные фиксированные порты: WebRTC — любой свободный, DVR — блок ниже временных портов ядра (иначе изредка `address already in use`).
+
+Итоговая команда FFmpeg (запускается в папке `r{N}/` запуска):
+
+```
+ffmpeg -hide_banner -nostdin -nostats -loglevel warning -protocol_whitelist file,udp,rtp -fflags +genpts \
+  -i ../input.sdp -map 0:v:0 -c copy \
+  -f hls -hls_time 1 -hls_list_size 10 -hls_segment_type fmp4 -hls_fmp4_init_filename init.mp4 \
+  -hls_segment_filename %d.m4s -hls_flags program_date_time+independent_segments index.m3u8
+```
+
+SDP-файл (`/dvr/{table_id}/input.sdp`, из `consumer.rtpParameters`; только вход FFmpeg на localhost, WebRTC по-прежнему через Device API):
+
+```
+v=0
+o=- 0 0 IN IP4 127.0.0.1
+s=PokerCam DVR
+c=IN IP4 127.0.0.1
+t=0 0
+m=video 30000 RTP/AVP 100
+a=rtcp:30001
+a=rtpmap:100 H264/90000
+a=fmtp:100 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f
+a=sendonly
+```
+
+Новые зависимости: FFmpeg в образе media-server (SPEC 4, DVR); новых npm-пакетов нет.
+
 ## Этап 3 «Media-server» — 28.10.2026
 
 - **Комнаты** (SPEC 7): mediasoup 3.32, воркер на ядро, у каждого воркера WebRtcServer с одним UDP- и TCP-портом (`RTC_PORT_MIN`…, `RTC_ANNOUNCED_ADDRESS`); комната на стол, кодеки H264 (42e01f, 4d001f) и VP8. Падение воркера перезапускает контейнер. Образ — `node:24-trixie-slim` (Debian 13): готовому воркеру mediasoup для ядер 7.x нужна glibc 2.38.

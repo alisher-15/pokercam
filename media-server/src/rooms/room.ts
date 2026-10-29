@@ -1,11 +1,13 @@
 import type { types } from "mediasoup";
 import type { Logger } from "pino";
 import type { BackendClient } from "../backend.js";
+import type { DvrManager } from "../dvr/manager.js";
 import type { Message } from "../contracts/messages.js";
 import type {
   CameraCapabilitiesMessage,
   CameraStateMessage,
   DeviceTelemetryMessage,
+  DvrInfoMessage,
   LicenseStatusMessage,
   RoomLicenseStatus,
   StreamState,
@@ -24,8 +26,17 @@ export interface RoomLicense {
 
 export class RoomFullError extends Error {}
 
+const DVR_INFO_INTERVAL_MS = 5000;
+
+/** The backend's license status as a room applies it: expired and suspended both block. */
+export function roomLicenseStatus(status: string): RoomLicenseStatus {
+  return status === "active" || status === "grace" ? status : "blocked";
+}
+
 export interface RoomDeps {
   backend: BackendClient;
+  /** Records the camera's stream (SPEC 7.2); absent when the DVR is off. */
+  dvr?: DvrManager | undefined;
   log: Logger;
   maxViewers: number;
   licenseCheckIntervalMs: number;
@@ -50,6 +61,7 @@ export class Room {
   readonly pendingAcks = new Map<string, string>();
   private stream: { state: StreamState; since: number } = { state: "offline", since: Date.now() };
   private readonly timer: NodeJS.Timeout;
+  private readonly dvrTimer: NodeJS.Timeout;
   readonly log: Logger;
 
   constructor(
@@ -63,6 +75,16 @@ export class Room {
     this.log = withContext(deps.log, { table_id: tableId });
     this.timer = setInterval(() => void this.checkLicense(), deps.licenseCheckIntervalMs);
     this.timer.unref();
+    // The buffer's bounds move every second; viewers hear about them every 5 s (and on joining).
+    this.dvrTimer = setInterval(() => {
+      const info = this.dvrInfo();
+      if (info) this.broadcast(info, true);
+    }, DVR_INFO_INTERVAL_MS);
+    this.dvrTimer.unref();
+  }
+
+  dvrInfo(): DvrInfoMessage | undefined {
+    return this.deps.dvr?.info(this.tableId);
   }
 
   /**
@@ -72,7 +94,7 @@ export class Room {
   async checkLicense(): Promise<RoomLicense> {
     try {
       const answer = await this.deps.backend.tableLicense(this.tableId);
-      const status: RoomLicenseStatus = answer.status === "active" || answer.status === "grace" ? answer.status : "blocked";
+      const status = roomLicenseStatus(answer.status);
       this.applyLicense({
         status,
         ...(status === "grace" ? { graceUntil: Date.parse(answer.grace_until) } : {}),
@@ -133,6 +155,7 @@ export class Room {
     });
     this.setStream("live");
     this.broadcast(message("signaling.new_producer", this.tableId, { producer_id: producer.id, kind: "video" }), true);
+    void this.deps.dvr?.record(this.tableId, this.router, producer);
   }
 
   private stopProducer(): void {
@@ -164,6 +187,7 @@ export class Room {
 
   close(): void {
     clearInterval(this.timer);
+    clearInterval(this.dvrTimer);
     this.router.close();
   }
 }

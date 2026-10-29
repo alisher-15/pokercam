@@ -2,7 +2,7 @@
   "name": "tools",
   "private": true,
   "type": "module",
-  "description": "Test tools: a fake camera and fake viewers (headless Chromium + mediasoup-client), acceptance checks, later the load test.",
+  "description": "Test tools: a fake camera and fake viewers (headless Chromium + mediasoup-client), stage acceptance checks and the load test.",
   "engines": {
     "node": ">=24"
   },
@@ -10,6 +10,8 @@
     "fake-camera": "node fake_camera/index.ts",
     "fake-viewer": "node fake_viewer/index.ts",
     "acceptance": "node acceptance/stage3.ts",
+    "acceptance-dvr": "node acceptance/stage4.ts",
+    "load-test": "node load_test/index.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."
   },

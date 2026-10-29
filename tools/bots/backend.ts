@@ -59,18 +59,26 @@ export interface Club {
 
 /** A club's table, reached with the club's activation key the way the Windows app does. */
 export async function club(backendUrl: string, key: string, tableNumber = 1): Promise<Club> {
+  const [table] = await clubTables(backendUrl, key, [tableNumber]);
+  return table as Club;
+}
+
+/** Several tables of one club through a single bot PC: the backend allows 5 activations a minute from one address. */
+export async function clubTables(backendUrl: string, key: string, numbers: number[]): Promise<Club[]> {
   const backend = new Backend(backendUrl);
-  // One activation per run: the backend allows 5 activations a minute from one address.
   const pc = await backend.activate(key, "bot-pc");
-  const table = (await backend.tables(await backend.token(pc.refresh_token))).tables.find((t) => t.number === tableNumber);
-  if (!table) throw new Error(`no table number ${String(tableNumber)}`);
-  return {
-    tableId: table.id,
-    viewerToken: () => backend.token(pc.refresh_token, table.id),
-    cameraToken: async () => {
-      const code = await backend.pairingCode(await backend.token(pc.refresh_token), table.id);
-      const phone = await backend.pair(code.code, `fake-camera-${String(Date.now())}`);
-      return backend.token(phone.refresh_token);
-    },
-  };
+  const tables = (await backend.tables(await backend.token(pc.refresh_token))).tables;
+  return numbers.map((number) => {
+    const table = tables.find((t) => t.number === number);
+    if (!table) throw new Error(`no table number ${String(number)}`);
+    return {
+      tableId: table.id,
+      viewerToken: () => backend.token(pc.refresh_token, table.id),
+      cameraToken: async () => {
+        const code = await backend.pairingCode(await backend.token(pc.refresh_token), table.id);
+        const phone = await backend.pair(code.code, `fake-camera-${String(Date.now())}-${String(number)}`);
+        return backend.token(phone.refresh_token);
+      },
+    };
+  });
 }

@@ -40,8 +40,9 @@ export class WorkerPool {
         log.fatal({ err: error, worker_pid: worker.pid }, "mediasoup worker died");
         process.exit(1);
       });
-      const port = config.rtcPortMin + i;
-      const listen = { ip: config.rtcListenIp, announcedAddress: config.rtcAnnouncedAddress, port };
+      // RTC_PORT_MIN = 0 (tests only): any free port.
+      const port = config.rtcPortMin === 0 ? undefined : config.rtcPortMin + i;
+      const listen = { ip: config.rtcListenIp, announcedAddress: config.rtcAnnouncedAddress, ...(port === undefined ? {} : { port }) };
       const webRtcServer = await worker.createWebRtcServer({
         listenInfos: [
           { protocol: "udp", ...listen },

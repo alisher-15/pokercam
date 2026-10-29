@@ -85,6 +85,8 @@ jobs:
             tools/package-lock.json
       - run: cd media-server && npm ci --no-audit --no-fund
       - run: cd tools && npm ci --no-audit --no-fund
+      - name: FFmpeg for the DVR tests
+        run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg)
       - run: make lint-media-server lint-tools
       - run: make test-media-server
       - run: cd media-server && npm run build
@@ -154,8 +156,10 @@ jobs:
       - run: |
           curl -fsS http://localhost:8000/health
           curl -fsS http://localhost:3000/health
-      - name: Install the bots (headless Chromium with a fake camera)
-        run: cd tools && npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
+      - name: Install the bots (headless Chromium with a fake camera) and ffprobe
+        run: |
+          cd tools && npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
+          command -v ffprobe || (sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg)
       # Stage 3 (SPEC 12): a fake camera, as many bot viewers as the table allows, one more is refused.
       - name: "Acceptance: the pilot, 1 viewer (.env.example)"
         run: make acceptance
@@ -163,6 +167,11 @@ jobs:
         run: |
           MAX_VIEWERS_PER_TABLE=5 docker compose up -d --wait media-server
           make acceptance MAX_VIEWERS_PER_TABLE=5
+      # Stage 4 (SPEC 7.4): 11 minutes of DVR, FFmpeg killed, access, an expired license (checked every 20 s here).
+      - name: "Acceptance: DVR"
+        run: |
+          LICENSE_CHECK_INTERVAL_S=20 docker compose up -d --wait media-server
+          make acceptance-dvr LICENSE_CHECK_INTERVAL_S=20
       - if: failure()
         run: docker compose logs
       - if: always()

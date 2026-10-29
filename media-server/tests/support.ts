@@ -1,19 +1,17 @@
 import { generateKeyPairSync, randomUUID, sign } from "node:crypto";
 import { once } from "node:events";
+import { mkdtemp, rm } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { WebSocket } from "ws";
-import { TokenVerifier } from "../src/auth/jwt.js";
-import { BackendClient } from "../src/backend.js";
+import { createApp } from "../src/app.js";
 import type { Config } from "../src/config.js";
 import type { Message, MessageType } from "../src/contracts/messages.js";
 import type { AccessTokenClaims, InternalLicenseResponse } from "../src/contracts/types.js";
 import { validateMessage, type MessageOf } from "../src/contracts/validate.js";
-import { createHttpServer } from "../src/http.js";
 import { createLogger } from "../src/log.js";
-import { RoomRegistry } from "../src/rooms/registry.js";
-import { WorkerPool } from "../src/rooms/workers.js";
-import { SignalingServer } from "../src/signaling/server.js";
 
 export const INTERNAL_TOKEN = "test-internal-token";
 const keys = generateKeyPairSync("ed25519");
@@ -82,12 +80,15 @@ export class FakeBackend {
   }
 }
 
-let nextPort = 41000 + Math.floor(Math.random() * 1000);
+// Below the kernel's ephemeral ports (32768+), in a random block per test file: files run in parallel.
+let nextDvrPort = 20000 + 40 * Math.floor(Math.random() * 300);
 
 /** media-server in this process: real mediasoup workers, real HTTP and WebSocket, the fake backend. */
 export async function startMediaServer(overrides: Partial<Config> = {}) {
   const backend = new FakeBackend();
   const backendUrl = await backend.start();
+  const dvrRtpPortMin = nextDvrPort;
+  nextDvrPort += 40;
   const config: Config = {
     port: 0,
     logLevel: "silent",
@@ -95,43 +96,33 @@ export async function startMediaServer(overrides: Partial<Config> = {}) {
     internalApiToken: INTERNAL_TOKEN,
     rtcListenIp: "127.0.0.1",
     rtcAnnouncedAddress: "127.0.0.1",
-    rtcPortMin: nextPort++,
+    rtcPortMin: 0,
     workers: 1,
     maxViewersPerTable: 5,
     licenseCheckIntervalMs: 600_000,
+    dvrEnabled: false,
+    dvrDir: await mkdtemp(join(tmpdir(), "pokercam-dvr-")),
+    dvrSegments: 600,
+    dvrRtpPortMin,
+    dvrRtpPortMax: dvrRtpPortMin + 39,
+    ffmpegPath: "ffmpeg",
     ...overrides,
   };
-  const log = createLogger("silent");
-  const client = new BackendClient(backendUrl, INTERNAL_TOKEN, log);
-  const verifier = new TokenVerifier(client, log, 0);
-  const pool = await WorkerPool.start(config, log);
-  const rooms = new RoomRegistry(pool, client, config, log);
-  const server = createHttpServer(log, {
-    token: INTERNAL_TOKEN,
-    recheckLicense: async (tableId) => {
-      const room = rooms.find(tableId);
-      if (room) await room.checkLicense();
-      return room !== undefined;
-    },
-  });
-  const signaling = new SignalingServer({ verifier, rooms, log });
-  signaling.attach(server);
-  server.listen(0, "127.0.0.1");
-  await once(server, "listening");
-  const port = (server.address() as AddressInfo).port;
+  const app = await createApp(config, createLogger(process.env.TEST_LOG_LEVEL ?? "silent"), 0);
+  app.server.listen(0, "127.0.0.1");
+  await once(app.server, "listening");
+  const port = (app.server.address() as AddressInfo).port;
   return {
     backend,
-    rooms,
+    rooms: app.rooms,
+    dvr: app.dvr,
     config,
     httpUrl: `http://127.0.0.1:${String(port)}`,
     wsUrl: `ws://127.0.0.1:${String(port)}/ws`,
-    stop() {
-      signaling.close();
-      rooms.closeAll();
-      pool.close();
-      server.closeAllConnections();
-      server.close();
+    async stop() {
+      await app.close();
       backend.server.close();
+      await rm(config.dvrDir, { recursive: true, force: true });
     },
   };
 }

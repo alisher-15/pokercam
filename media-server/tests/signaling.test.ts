@@ -36,12 +36,12 @@ beforeEach(async () => {
   server = await startMediaServer({ maxViewersPerTable: 2 });
 });
 
-afterEach(() => {
+afterEach(async () => {
   for (const client of clients.splice(0)) {
     expect(client.invalid, "every message from the server matches contracts/").toEqual([]);
     client.close();
   }
-  server.stop();
+  await server.stop();
 });
 
 describe("join", () => {
@@ -115,13 +115,16 @@ describe("requests", () => {
     expect(codecs.map((c) => c.mimeType)).toEqual(expect.arrayContaining(["video/H264", "video/VP8"]));
   });
 
-  test("a viewer gets a receive transport on the announced address", async () => {
-    const client = await viewer(randomUUID());
+  test("a viewer gets a receive transport on the worker's ports at the announced address", async () => {
+    const table = randomUUID();
+    const client = await viewer(table);
     const reply = await client.request("signaling.create_transport", { direction: "recv" });
     expect(reply.type).toBe("signaling.create_transport.result");
     const candidates = (reply.payload as { ice_candidates: { address: string; port: number; protocol: string }[] }).ice_candidates;
     expect(candidates.map((c) => c.protocol).sort()).toEqual(["tcp", "udp"]);
-    for (const c of candidates) expect([c.address, c.port]).toEqual(["127.0.0.1", server.config.rtcPortMin]);
+    const sockets = (await server.rooms.find(table)?.webRtcServer.dump()) as unknown as { udpSockets: { port: number }[]; tcpServers: { port: number }[] };
+    const ports = { udp: sockets.udpSockets[0]?.port, tcp: sockets.tcpServers[0]?.port };
+    for (const c of candidates) expect([c.address, c.port]).toEqual(["127.0.0.1", ports[c.protocol as "udp" | "tcp"]]);
     const tcpOnly = await client.request("signaling.create_transport", { direction: "recv", force_tcp: true });
     const tcp = (tcpOnly.payload as { ice_candidates: { protocol: string }[] }).ice_candidates;
     expect(tcp.map((c) => c.protocol)).toEqual(["tcp"]);
