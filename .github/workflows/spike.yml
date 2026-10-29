@@ -40,6 +40,8 @@ jobs:
     name: APK to install by hand
     needs: checks
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -56,6 +58,18 @@ jobs:
         with:
           name: camera2-spike-apk
           path: spikes/camera2_webrtc/build/app/outputs/flutter-apk/app-debug.apk
+      # A direct link to the .apk for a phone or tablet: an artifact is a zip that needs a signed-in
+      # browser and does not download from every mobile browser.
+      - name: Publish to the spike-apk pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cp build/app/outputs/flutter-apk/app-debug.apk camera2-spike.apk
+          gh release delete spike-apk --yes --cleanup-tag || true
+          gh release create spike-apk camera2-spike.apk --prerelease --target "$GITHUB_SHA" \
+            --title "Camera2 spike (этап 1) — APK для телефона" \
+            --notes "Тестовое приложение этапа 1: ручные ISO, фокус, зум и др. во время трансляции. Скачайте camera2-spike.apk на телефоне или планшете, установите, нажмите «Включить камеру», затем «Автотест» и «Копировать отчёт». Сборка из коммита $GITHUB_SHA."
 
   emulator:
     name: Self-test on an emulator
