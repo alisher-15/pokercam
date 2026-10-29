@@ -1,5 +1,5 @@
 name: shared
-description: "Shared code of the camera and viewer apps: contracts, wire format, localization, brand theme."
+description: "Shared code of the camera and viewer apps: contracts, wire format, networking, localization, brand theme."
 publish_to: none
 version: 0.0.1
 
@@ -12,6 +12,8 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  # REST calls to the backend (SPEC 5.2), from the Dart team; MockClient makes them testable.
+  http: ^1.6.0
   intl: any
 
 dev_dependencies:

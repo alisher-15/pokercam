@@ -11,5 +11,324 @@
   "underConstruction": "This screen is under construction.",
   "@underConstruction": {
     "description": "Placeholder until the app's screens are built (stages 5-7)."
+  },
+  "pairingTitle": "Pair with a table",
+  "@pairingTitle": {
+    "description": "Pairing screen title (SPEC 6.1)."
+  },
+  "pairingScanHint": "Point the camera at the QR code from “Pair a phone” in the Windows app.",
+  "@pairingScanHint": {
+    "description": "Hint above the QR scanner."
+  },
+  "pairingManual": "Enter the code",
+  "@pairingManual": {
+    "description": "Button that opens the manual pairing form."
+  },
+  "pairingScan": "Scan the QR code",
+  "@pairingScan": {
+    "description": "Button back to the QR scanner."
+  },
+  "pairingServerLabel": "Server address",
+  "@pairingServerLabel": {
+    "description": "Field: backend address, e.g. https://cam.club.kz."
+  },
+  "pairingCodeLabel": "6-digit code",
+  "@pairingCodeLabel": {
+    "description": "Field: the pairing code shown on the PC."
+  },
+  "pairingSubmit": "Pair",
+  "@pairingSubmit": {
+    "description": "Button that pairs with the typed code."
+  },
+  "pairingInProgress": "Pairing…",
+  "@pairingInProgress": {
+    "description": "Shown while POST /device/pair runs."
+  },
+  "pairingErrorCode": "The code is wrong or has expired. Get a new one on the PC.",
+  "@pairingErrorCode": {
+    "description": "Pairing error: invalid or expired code."
+  },
+  "pairingErrorTooMany": "Too many attempts. Wait a minute and try again.",
+  "@pairingErrorTooMany": {
+    "description": "Pairing error: rate limit (5 a minute)."
+  },
+  "pairingErrorUnreachable": "The server does not answer. Check the address and the network.",
+  "@pairingErrorUnreachable": {
+    "description": "Pairing error: network or wrong address."
+  },
+  "pairingErrorLicense": "The club's access has ended. Contact the administrator.",
+  "@pairingErrorLicense": {
+    "description": "Pairing error: the license blocks the club."
+  },
+  "pairingErrorOther": "Pairing failed ({code}).",
+  "@pairingErrorOther": {
+    "description": "Pairing error with the server's error code.",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "internal"
+      }
+    }
+  },
+  "pairingQrNotOurs": "This is not a PokerCam pairing code.",
+  "@pairingQrNotOurs": {
+    "description": "A scanned QR code that is not ours."
+  },
+  "pairingReplaced": "This phone was replaced by another one or unpaired. Pair it again.",
+  "@pairingReplaced": {
+    "description": "Shown on the pairing screen after the server dropped this phone (SPEC 6.4)."
+  },
+  "preflightTitle": "Before streaming",
+  "@preflightTitle": {
+    "description": "Pre-flight check screen title (SPEC 6.1)."
+  },
+  "preflightCamera": "Camera settings",
+  "@preflightCamera": {
+    "description": "Section: which camera parameters this phone supports."
+  },
+  "preflightVideo": "Video",
+  "@preflightVideo": {
+    "description": "Section: resolution and codec."
+  },
+  "preflightSystem": "Phone",
+  "@preflightSystem": {
+    "description": "Section: permissions, battery, license."
+  },
+  "paramFocus": "Focus",
+  "@paramFocus": {
+    "description": "Camera parameter."
+  },
+  "paramIso": "ISO",
+  "@paramIso": {
+    "description": "Camera parameter."
+  },
+  "paramExposure": "Exposure",
+  "@paramExposure": {
+    "description": "Camera parameter (exposure time)."
+  },
+  "paramBrightness": "Brightness",
+  "@paramBrightness": {
+    "description": "Camera parameter (exposure compensation)."
+  },
+  "paramContrast": "Contrast",
+  "@paramContrast": {
+    "description": "Camera parameter."
+  },
+  "paramWhiteBalance": "White balance",
+  "@paramWhiteBalance": {
+    "description": "Camera parameter."
+  },
+  "paramZoom": "Zoom",
+  "@paramZoom": {
+    "description": "Camera parameter."
+  },
+  "supported": "supported",
+  "@supported": {
+    "description": "A camera parameter this phone can change."
+  },
+  "notSupported": "not supported",
+  "@notSupported": {
+    "description": "A camera parameter this phone cannot change; the PC blocks it."
+  },
+  "preflightResolution": "Resolution 1920×1080",
+  "@preflightResolution": {
+    "description": "Check: the camera gives 1080p."
+  },
+  "preflightResolutionActual": "the camera gives {size}",
+  "@preflightResolutionActual": {
+    "description": "Detail under the resolution check.",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "1280×720"
+      }
+    }
+  },
+  "preflightCodec": "H.264 encoder",
+  "@preflightCodec": {
+    "description": "Check: the phone can encode H.264 (needed for rewind, SPEC 6.3)."
+  },
+  "preflightCodecMissing": "no H.264: live works, rewind does not",
+  "@preflightCodecMissing": {
+    "description": "Detail when the phone has no H.264 encoder."
+  },
+  "preflightCameraPermission": "Camera access",
+  "@preflightCameraPermission": {
+    "description": "Check: camera permission."
+  },
+  "preflightNotifications": "Notifications (to keep streaming in the background)",
+  "@preflightNotifications": {
+    "description": "Check: notification permission for the foreground service."
+  },
+  "preflightBattery": "No battery restrictions",
+  "@preflightBattery": {
+    "description": "Check: the app is exempt from battery optimization (SPEC 6.3)."
+  },
+  "preflightLicense": "Access",
+  "@preflightLicense": {
+    "description": "Check: the club's license."
+  },
+  "licenseActive": "active until {date}",
+  "@licenseActive": {
+    "description": "License detail.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "28.11.2026"
+      }
+    }
+  },
+  "licenseGrace": "payment overdue: ends {date}",
+  "@licenseGrace": {
+    "description": "License detail during the 3-day grace period.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "01.12.2026"
+      }
+    }
+  },
+  "licenseBlocked": "blocked",
+  "@licenseBlocked": {
+    "description": "License detail: expired or suspended."
+  },
+  "preflightRequired": "required",
+  "@preflightRequired": {
+    "description": "Marks a check that must pass before streaming."
+  },
+  "preflightFix": "Allow",
+  "@preflightFix": {
+    "description": "Button that asks for a missing permission or exemption."
+  },
+  "preflightRecheck": "Check again",
+  "@preflightRecheck": {
+    "description": "Button that runs the checks again."
+  },
+  "preflightStart": "Start streaming",
+  "@preflightStart": {
+    "description": "Button, active only when every required check passes."
+  },
+  "unpair": "Unpair this phone",
+  "@unpair": {
+    "description": "Button: forget the table and go back to pairing."
+  },
+  "unpairConfirm": "This phone will stop being the table's camera. Continue?",
+  "@unpairConfirm": {
+    "description": "Confirmation before unpairing."
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Dialog button."
+  },
+  "confirm": "Continue",
+  "@confirm": {
+    "description": "Dialog button."
+  },
+  "liveBadge": "LIVE",
+  "@liveBadge": {
+    "description": "Badge over the preview while the stream is published."
+  },
+  "statusConnecting": "Connecting…",
+  "@statusConnecting": {
+    "description": "Broadcast status before the first publish."
+  },
+  "statusReconnecting": "Reconnecting…",
+  "@statusReconnecting": {
+    "description": "Broadcast status after the connection was lost."
+  },
+  "statsBitrate": "{kbps} kbit/s",
+  "@statsBitrate": {
+    "description": "Bitrate on the broadcast screen.",
+    "placeholders": {
+      "kbps": {
+        "type": "int"
+      }
+    }
+  },
+  "statsFps": "{fps} fps",
+  "@statsFps": {
+    "description": "Frame rate on the broadcast screen.",
+    "placeholders": {
+      "fps": {
+        "type": "int"
+      }
+    }
+  },
+  "statsBattery": "{pct} %",
+  "@statsBattery": {
+    "description": "Battery level on the broadcast screen.",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "statsTemperature": "{temp} °C",
+  "@statsTemperature": {
+    "description": "Battery temperature on the broadcast screen.",
+    "placeholders": {
+      "temp": {
+        "type": "String",
+        "example": "36.5"
+      }
+    }
+  },
+  "networkWifi": "Wi-Fi",
+  "@networkWifi": {
+    "description": "Network type."
+  },
+  "networkCellular": "Mobile network",
+  "@networkCellular": {
+    "description": "Network type."
+  },
+  "networkEthernet": "Ethernet",
+  "@networkEthernet": {
+    "description": "Network type."
+  },
+  "networkNone": "No network",
+  "@networkNone": {
+    "description": "Network type."
+  },
+  "bannerNoConnection": "No connection to the server. Reconnecting…",
+  "@bannerNoConnection": {
+    "description": "Banner over the preview while reconnecting (SPEC 6.4)."
+  },
+  "bannerLicenseBlocked": "The club's access is blocked: streaming stopped.",
+  "@bannerLicenseBlocked": {
+    "description": "Banner when the license blocks the table."
+  },
+  "bannerLicenseGrace": "Payment overdue: access ends {date}.",
+  "@bannerLicenseGrace": {
+    "description": "Banner during the grace period.",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "01.12.2026"
+      }
+    }
+  },
+  "stopStreaming": "Stop",
+  "@stopStreaming": {
+    "description": "Button that stops streaming and goes back to the check."
+  },
+  "alertOverheating": "The camera phone is overheating: video quality is reduced.",
+  "@alertOverheating": {
+    "description": "device.alert message_key (SPEC 6.4, overheating warning), shown on the phone and the PC."
+  },
+  "alertOverheatingCritical": "The camera phone is badly overheated: video quality is strongly reduced.",
+  "@alertOverheatingCritical": {
+    "description": "device.alert message_key (overheating critical)."
+  },
+  "alertCooledDown": "The camera phone has cooled down: video quality is restored.",
+  "@alertCooledDown": {
+    "description": "device.alert message_key (overheating info, bitrate back to 4 Mbit/s)."
+  },
+  "alertLowBattery": "The camera phone's battery is below 15 %. Plug in the charger.",
+  "@alertLowBattery": {
+    "description": "device.alert message_key (low_battery warning)."
+  },
+  "alertBatteryCritical": "The camera phone's battery is below 5 %: streaming will stop soon.",
+  "@alertBatteryCritical": {
+    "description": "device.alert message_key (low_battery critical)."
   }
 }
