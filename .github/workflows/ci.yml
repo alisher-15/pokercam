@@ -110,6 +110,8 @@ jobs:
     if: github.event_name != 'push' || github.ref == 'refs/heads/main'
     needs: apps
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -121,8 +123,20 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-      - run: flutter build apk --debug
+      # Release mode (AOT): what a phone runs, at the speed it will run. Signed with the debug key until stage 8.
+      - run: flutter build apk --release
         working-directory: apps/camera_android
+      # A direct link for installing on a phone or tablet (an artifact zip does not download from every mobile browser).
+      - name: Publish to the camera-apk pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cp apps/camera_android/build/app/outputs/flutter-apk/app-release.apk pokercam-camera.apk
+          gh release delete camera-apk --yes --cleanup-tag || true
+          gh release create camera-apk pokercam-camera.apk --prerelease --target "$GITHUB_SHA" \
+            --title "PokerCam — приложение камеры (APK)" \
+            --notes "Приложение камеры стола из ветки ${GITHUB_REF_NAME}, коммит $GITHUB_SHA. Скачайте pokercam-camera.apk на телефоне или планшете и установите."
 
   build-windows:
     name: Build Windows app
