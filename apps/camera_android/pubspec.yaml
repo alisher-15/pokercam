@@ -11,9 +11,25 @@ dependencies:
     sdk: flutter
   shared:
     path: ../shared
+  # SPEC 4: BLoC.
+  flutter_bloc: ^9.1.1
+  # Camera capture and WebRTC. Exact version: the camera2_control plugin reads its private fields (SPEC 6.2, option a).
+  flutter_webrtc: 1.6.3
+  # mediasoup's Device API for Flutter: the maintained fork of mediasoup_client_flutter (SPEC 14, 29.10.2026).
+  mediasfu_mediasoup_client: ^0.1.4
+  # The QR code on the PC (SPEC 6.1); bundled ML Kit model, so it works without Google services (Huawei).
+  mobile_scanner: ^7.4.2
+  # The phone's refresh token, in the Android Keystore.
+  flutter_secure_storage: ^11.2.0
+  # The last camera settings, restored after a reconnect or restart (SPEC 6.2).
+  shared_preferences: ^2.5.6
+  http: ^1.6.0
+  intl: any
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
   flutter_lints: ^6.0.0
 

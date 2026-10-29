@@ -517,6 +517,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The camera phone\'s battery is below 5 %: streaming will stop soon.'**
   String get alertBatteryCritical;
+
+  /// Shown instead of the QR scanner when the camera cannot be used.
+  ///
+  /// In en, this message translates to:
+  /// **'No camera access — enter the code by hand.'**
+  String get pairingCameraDenied;
+
+  /// Example server address in the manual pairing form.
+  ///
+  /// In en, this message translates to:
+  /// **'https://cam.club.kz'**
+  String get pairingServerHint;
+
+  /// Android notification channel of the streaming service.
+  ///
+  /// In en, this message translates to:
+  /// **'Streaming'**
+  String get serviceChannel;
+
+  /// Notification title while streaming (SPEC 6.3 foreground service).
+  ///
+  /// In en, this message translates to:
+  /// **'The table camera is on air'**
+  String get serviceTitle;
+
+  /// Notification text while streaming.
+  ///
+  /// In en, this message translates to:
+  /// **'Streaming to the server. Keep the app open.'**
+  String get serviceText;
+
+  /// Pre-flight: opening the camera failed.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera did not open: {error}'**
+  String preflightCameraError(String error);
+
+  /// License detail when the backend cannot be reached.
+  ///
+  /// In en, this message translates to:
+  /// **'cannot check: no connection to the server'**
+  String get preflightLicenseUnknown;
 }
 
 class _AppLocalizationsDelegate

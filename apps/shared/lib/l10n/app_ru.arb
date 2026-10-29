@@ -69,5 +69,12 @@
   "alertOverheatingCritical": "Телефон-камера сильно перегрет: качество видео сильно снижено.",
   "alertCooledDown": "Телефон-камера остыл: качество видео восстановлено.",
   "alertLowBattery": "Заряд телефона-камеры ниже 15 %. Подключите зарядку.",
-  "alertBatteryCritical": "Заряд телефона-камеры ниже 5 %: трансляция скоро прервётся."
+  "alertBatteryCritical": "Заряд телефона-камеры ниже 5 %: трансляция скоро прервётся.",
+  "pairingCameraDenied": "Нет доступа к камере — введите код вручную.",
+  "pairingServerHint": "https://cam.club.kz",
+  "serviceChannel": "Трансляция",
+  "serviceTitle": "Камера стола в эфире",
+  "serviceText": "Идёт трансляция на сервер. Не закрывайте приложение.",
+  "preflightCameraError": "Камера не открылась: {error}",
+  "preflightLicenseUnknown": "не проверить: нет связи с сервером"
 }

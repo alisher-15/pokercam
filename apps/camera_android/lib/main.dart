@@ -1,31 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:shared/shared.dart';
 
-void main() => runApp(const CameraApp());
+import 'src/app.dart';
+import 'src/media.dart';
+import 'src/platform/camera2.dart';
+import 'src/platform/device.dart';
+import 'src/store.dart';
 
-class CameraApp extends StatelessWidget {
-  const CameraApp({super.key});
-
-  @override
-  Widget build(BuildContext context) => MaterialApp(
-    onGenerateTitle: (context) => AppLocalizations.of(context).cameraAppTitle,
-    theme: buildTheme(neutralColors),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    home: const _HomeScreen(),
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  final log = JsonLog('camera');
+  runApp(
+    CameraApp(
+      services: Services(
+        pairings: SecurePairingStore(),
+        settings: PreferencesSettingsStore(),
+        camera: Camera2Channel(),
+        device: DeviceChannel(),
+        publisher: MediasoupPublisher(log),
+        log: log,
+      ),
+    ),
   );
-}
-
-/// Placeholder until the real screens arrive (SPEC section 12).
-class _HomeScreen extends StatelessWidget {
-  const _HomeScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.cameraAppTitle)),
-      body: Center(child: Text(l10n.underConstruction)),
-    );
-  }
 }

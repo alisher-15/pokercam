@@ -250,4 +250,29 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get alertBatteryCritical =>
       'The camera phone\'s battery is below 5 %: streaming will stop soon.';
+
+  @override
+  String get pairingCameraDenied =>
+      'No camera access — enter the code by hand.';
+
+  @override
+  String get pairingServerHint => 'https://cam.club.kz';
+
+  @override
+  String get serviceChannel => 'Streaming';
+
+  @override
+  String get serviceTitle => 'The table camera is on air';
+
+  @override
+  String get serviceText => 'Streaming to the server. Keep the app open.';
+
+  @override
+  String preflightCameraError(String error) {
+    return 'The camera did not open: $error';
+  }
+
+  @override
+  String get preflightLicenseUnknown =>
+      'cannot check: no connection to the server';
 }

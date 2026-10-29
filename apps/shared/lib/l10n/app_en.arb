@@ -330,5 +330,39 @@
   "alertBatteryCritical": "The camera phone's battery is below 5 %: streaming will stop soon.",
   "@alertBatteryCritical": {
     "description": "device.alert message_key (low_battery critical)."
+  },
+  "pairingCameraDenied": "No camera access — enter the code by hand.",
+  "@pairingCameraDenied": {
+    "description": "Shown instead of the QR scanner when the camera cannot be used."
+  },
+  "pairingServerHint": "https://cam.club.kz",
+  "@pairingServerHint": {
+    "description": "Example server address in the manual pairing form."
+  },
+  "serviceChannel": "Streaming",
+  "@serviceChannel": {
+    "description": "Android notification channel of the streaming service."
+  },
+  "serviceTitle": "The table camera is on air",
+  "@serviceTitle": {
+    "description": "Notification title while streaming (SPEC 6.3 foreground service)."
+  },
+  "serviceText": "Streaming to the server. Keep the app open.",
+  "@serviceText": {
+    "description": "Notification text while streaming."
+  },
+  "preflightCameraError": "The camera did not open: {error}",
+  "@preflightCameraError": {
+    "description": "Pre-flight: opening the camera failed.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "camera_unavailable"
+      }
+    }
+  },
+  "preflightLicenseUnknown": "cannot check: no connection to the server",
+  "@preflightLicenseUnknown": {
+    "description": "License detail when the backend cannot be reached."
   }
 }

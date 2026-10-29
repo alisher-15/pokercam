@@ -250,4 +250,29 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get alertBatteryCritical =>
       'Заряд телефона-камеры ниже 5 %: трансляция скоро прервётся.';
+
+  @override
+  String get pairingCameraDenied =>
+      'Нет доступа к камере — введите код вручную.';
+
+  @override
+  String get pairingServerHint => 'https://cam.club.kz';
+
+  @override
+  String get serviceChannel => 'Трансляция';
+
+  @override
+  String get serviceTitle => 'Камера стола в эфире';
+
+  @override
+  String get serviceText =>
+      'Идёт трансляция на сервер. Не закрывайте приложение.';
+
+  @override
+  String preflightCameraError(String error) {
+    return 'Камера не открылась: $error';
+  }
+
+  @override
+  String get preflightLicenseUnknown => 'не проверить: нет связи с сервером';
 }
