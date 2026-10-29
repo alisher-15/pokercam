@@ -72,7 +72,8 @@ void main() {
       );
       await tester.tap(find.byKey(const Key('pairing-submit')));
 
-      await waitFor(tester, find.byKey(const Key('preflight-start')));
+      // The check's list is long: its start button is built only once scrolled to.
+      await waitFor(tester, find.byKey(const Key('preflight-screen')));
       final start = find.byKey(const Key('preflight-start'));
       await tester.scrollUntilVisible(start, 200);
       final end = DateTime.now().add(const Duration(seconds: 60));

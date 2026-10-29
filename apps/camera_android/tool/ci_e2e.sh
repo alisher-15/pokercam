@@ -28,6 +28,9 @@ wait "$harness"
 harness_status=$?
 kill "$granter" 2>/dev/null
 adb logcat -d > build/logcat.txt 2>/dev/null
+echo "--- the app's log and errors (logcat) ---"
+grep -E 'I flutter|E flutter|Camera2Control|AndroidRuntime|FATAL' build/logcat.txt | tail -150
+echo "--- the PC harness ---"
 cat build/harness.log
 echo "app test: $app_status, harness: $harness_status"
 [ "$app_status" -eq 0 ] && [ "$harness_status" -eq 0 ]

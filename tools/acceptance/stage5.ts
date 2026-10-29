@@ -75,6 +75,7 @@ try {
   const live = await until(viewer, (s) => s.frames > 10, 90_000);
   const pairingS = (Date.now() - pairingRequestedAt) / 1000;
   check("pairing by code → video on the PC in < 1 min", live.state.frames > 10 && pairingS < 60, `${pairingS.toFixed(1)} s, ${live.state.codec ?? "?"} ${String(live.state.width)}x${String(live.state.height)}`);
+  if (live.state.frames <= 10) throw new Error("no video from the app: the other checks need it");
 
   // 2. Every setting the camera supports, from the PC; the rest refused honestly.
   const caps = (await until(viewer, (s) => s.capabilities !== null, 20_000)).state.capabilities ?? {};

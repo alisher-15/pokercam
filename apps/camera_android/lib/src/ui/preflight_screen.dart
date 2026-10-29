@@ -96,6 +96,15 @@ class PreflightCubit extends Cubit<PreflightState> {
     } finally {
       api.close();
     }
+    services.log.info('pre-flight check', {
+      'camera_permission': permissions.camera,
+      'capture_size': camera?.captureSize,
+      'hardware_level': camera?.hardwareLevel,
+      'camera_error': cameraError,
+      'h264_hardware_encoder': h264,
+      'license': license?.status.name,
+      'license_error': licenseError,
+    });
     if (isClosed) return;
     emit(
       PreflightState(
@@ -163,6 +172,7 @@ class PreflightScreen extends StatelessWidget {
             body: state.loading
                 ? const Center(child: CircularProgressIndicator())
                 : ListView(
+                    key: const Key('preflight-screen'),
                     padding: const EdgeInsets.all(16),
                     children: [
                       if (services.publisher.stream != null)
