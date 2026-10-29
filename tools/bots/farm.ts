@@ -39,6 +39,11 @@ export class Bot {
     return this.page.evaluate(([p, v]) => window.bot.cameraSet(p, v), [param, value] as const);
   }
 
+  /** camera.set with any control (auto, manual value, white balance preset); returns its id. */
+  cameraSetControl(param: string, control: Record<string, unknown>): Promise<string> {
+    return this.page.evaluate(([p, c]) => window.bot.cameraSetControl(p, c), [param, control] as const);
+  }
+
   close(): Promise<void> {
     return this.page.close();
   }

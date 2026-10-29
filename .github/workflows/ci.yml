@@ -139,6 +139,91 @@ jobs:
             --title "PokerCam — приложение камеры (APK)" \
             --notes "Приложение камеры стола из ветки ${GITHUB_REF_NAME}, коммит $GITHUB_SHA. Скачайте pokercam-camera.apk на телефоне или планшете и установите."
 
+  android-e2e:
+    name: Camera app on an emulator (stage 5)
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
+    needs: [apps, backend, media-server]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: tools/package-lock.json
+      # The emulator reaches this machine at its own address; everything is announced there.
+      - name: Stack on this machine
+        run: |
+          HOST_IP=$(hostname -I | awk '{print $1}')
+          echo "HOST_IP=$HOST_IP" >> "$GITHUB_ENV"
+          cp .env.example .env
+          sed -i "s|^RTC_ANNOUNCED_ADDRESS=.*|RTC_ANNOUNCED_ADDRESS=$HOST_IP|; s|^PUBLIC_API_URL=.*|PUBLIC_API_URL=http://$HOST_IP:8000|; s|^PUBLIC_MEDIA_URL=.*|PUBLIC_MEDIA_URL=ws://$HOST_IP:3000/ws|" .env
+          make dev
+          echo "CLUB_KEY=$(docker compose exec -T backend python -m app.cli create-client "E2E $(date +%s)")" >> "$GITHUB_ENV"
+      - name: The PC's bots (headless Chromium)
+        run: cd tools && npm ci --no-audit --no-fund && npx playwright install --with-deps chromium
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated -camera-front none
+          disable-animations: true
+          working-directory: apps/camera_android
+          script: ./tool/ci_e2e.sh
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: camera-e2e
+          path: |
+            apps/camera_android/build/e2e-test.log
+            apps/camera_android/build/harness.log
+            apps/camera_android/build/logcat.txt
+      - if: failure()
+        run: docker compose logs
+
+  deploy-script:
+    name: Install script on a clean Ubuntu (deploy/install.sh)
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
+    needs: [backend, media-server]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: First install
+        run: sudo bash deploy/install.sh --ref "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" --ip 127.0.0.1 --dir /opt/pokercam
+      - name: Running, admin can sign in, a pairing code comes out
+        run: |
+          curl -fsS http://localhost:8000/health
+          curl -fsS http://localhost:3000/health
+          sudo grep -q '^ENVIRONMENT=production' /opt/pokercam/.env
+          email=$(sudo grep '^ADMIN_EMAIL=' /opt/pokercam/.env | cut -d= -f2-)
+          password=$(sudo grep '^ADMIN_PASSWORD=' /opt/pokercam/.env | cut -d= -f2-)
+          test "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -d "email=$email&password=$password" http://localhost:8000/admin/login)" = "303 http://localhost:8000/admin/clients"
+          cd /opt/pokercam
+          sudo docker compose exec -T backend python -m app.cli seed
+          sudo docker compose exec -T backend python -m app.cli pairing-code "Demo club" | grep -E '^code: [0-9]{6}$'
+      - name: Running it again updates and keeps the secrets
+        run: |
+          before=$(sudo grep '^JWT_PRIVATE_KEY=' /opt/pokercam/.env)
+          sudo bash deploy/install.sh --ref "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" --ip 127.0.0.1 --dir /opt/pokercam
+          test "$before" = "$(sudo grep '^JWT_PRIVATE_KEY=' /opt/pokercam/.env)"
+          curl -fsS http://localhost:8000/health
+
   build-windows:
     name: Build Windows app
     if: github.event_name != 'push' || github.ref == 'refs/heads/main'

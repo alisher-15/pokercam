@@ -22,7 +22,8 @@ export interface BotState {
   fps: number;
   frames: number;
   producerId: string | null;
-  acks: { request_id: string; ok: boolean }[];
+  /** camera.ack replies, with the time they arrived (ms since epoch) and the camera's answer. */
+  acks: { request_id: string; ok: boolean; at: number; error: string | null; applied: unknown }[];
   cameraSets: number;
   /** Viewer: the latest dvr.info. */
   dvr: { from: number; to: number; url: string } | null;
@@ -33,6 +34,15 @@ export interface BotState {
   freezes: number;
   /** Camera: why the encoder sends less than asked (cpu, bandwidth) or "none". */
   qualityLimitation: string | null;
+  /** Viewer: what the camera says it can do, its latest settings, telemetry and alerts (stage 5). */
+  capabilities: Record<string, { supported: boolean; modes: string[]; min?: number; max?: number }> | null;
+  cameraState: Record<string, unknown> | null;
+  telemetry: Record<string, unknown> | null;
+  alerts: { kind: string; level: string; message_key: string; at: number }[];
+  /** Viewer: how many times a producer was announced (a camera reconnecting announces a new one). */
+  producers: number;
+  /** Viewer: when frames last grew (ms since epoch). */
+  lastFrameAt: number;
 }
 
 interface Envelope {
@@ -62,6 +72,12 @@ const state: BotState = {
   framesDropped: 0,
   freezes: 0,
   qualityLimitation: null,
+  capabilities: null,
+  cameraState: null,
+  telemetry: null,
+  alerts: [],
+  producers: 0,
+  lastFrameAt: 0,
 };
 
 let ws: WebSocket;
@@ -103,7 +119,20 @@ function onMessage(msg: Envelope): void {
       state.stream = String(msg.payload.status);
       return;
     case "signaling.new_producer":
+      state.producers++;
       if (config.role === "viewer") void loaded.then(consume).catch((e: unknown) => (state.error = String(e)));
+      return;
+    case "camera.capabilities":
+      state.capabilities = (msg.payload as { params: BotState["capabilities"] }).params;
+      return;
+    case "camera.state":
+      state.cameraState = (msg.payload as { controls: Record<string, unknown> }).controls;
+      return;
+    case "device.telemetry":
+      state.telemetry = msg.payload;
+      return;
+    case "device.alert":
+      state.alerts.push({ ...(msg.payload as { kind: string; level: string; message_key: string }), at: Date.now() });
       return;
     case "signaling.consumer_closed":
       consumers.get(String(msg.payload.consumer_id))?.close();
@@ -123,7 +152,13 @@ function onMessage(msg: Envelope): void {
       };
       return;
     case "camera.ack":
-      state.acks.push({ request_id: String(msg.payload.request_id), ok: Boolean(msg.payload.ok) });
+      state.acks.push({
+        request_id: String(msg.payload.request_id),
+        ok: Boolean(msg.payload.ok),
+        at: Date.now(),
+        error: typeof msg.payload.error === "string" ? msg.payload.error : null,
+        applied: msg.payload.applied ?? null,
+      });
       return;
   }
 }
@@ -205,7 +240,9 @@ async function refreshStats(): Promise<void> {
   state.width = Number(rtp.frameWidth ?? 0);
   state.height = Number(rtp.frameHeight ?? 0);
   state.fps = Number(rtp.framesPerSecond ?? 0);
-  state.frames = Number((config.role === "camera" ? rtp.framesEncoded : rtp.framesDecoded) ?? 0);
+  const frames = Number((config.role === "camera" ? rtp.framesEncoded : rtp.framesDecoded) ?? 0);
+  if (frames > state.frames) state.lastFrameAt = Date.now();
+  state.frames = frames;
   if (config.role === "camera") {
     state.packetsLost = Number(reports.find((r) => r.type === "remote-inbound-rtp")?.packetsLost ?? 0);
     state.qualityLimitation = typeof rtp.qualityLimitationReason === "string" ? rtp.qualityLimitationReason : null;
@@ -249,6 +286,7 @@ declare global {
       start: (cfg: BotConfig) => Promise<void>;
       state: () => BotState;
       cameraSet: (param: string, value: number) => string;
+      cameraSetControl: (param: string, control: Record<string, unknown>) => string;
     };
   }
 }
@@ -257,4 +295,5 @@ window.bot = {
   start,
   state: () => structuredClone(state),
   cameraSet: (param, value) => send("camera.set", { param, control: { mode: "manual", value } }),
+  cameraSetControl: (param, control) => send("camera.set", { param, control }),
 };

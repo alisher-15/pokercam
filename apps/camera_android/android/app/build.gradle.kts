@@ -32,9 +32,10 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Signed with the debug key until each brand gets its own (stage 8).
             signingConfig = signingConfigs.getByName("debug")
+            // camera2_control reads private fields of libwebrtc and flutter_webrtc: R8 must keep them.
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
@@ -47,4 +48,10 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // flutter_webrtc uses libwebrtc as an `implementation` dependency, so its classes are not on the app's
+    // compile classpath. Camera2Control needs Camera2Capturer: the same version as flutter_webrtc 1.6.3 (stage 1 spike).
+    implementation("io.github.webrtc-sdk:android:150.7871.04")
 }

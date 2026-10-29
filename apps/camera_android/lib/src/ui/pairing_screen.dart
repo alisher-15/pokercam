@@ -125,6 +125,7 @@ class _PairingScreenState extends State<PairingScreen> {
           builder: (context, state) {
             final cubit = context.read<PairingCubit>();
             return ListView(
+              key: const Key('pairing-screen'),
               padding: const EdgeInsets.all(16),
               children: [
                 if (widget.replaced) _Banner(text: l10n.pairingReplaced),
