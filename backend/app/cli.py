@@ -1,4 +1,4 @@
-"""python -m app.cli <command>: gen-keys, create-admin, create-client, seed."""
+"""python -m app.cli <command>: gen-keys, create-admin, create-client, seed, pairing-code."""
 
 import argparse
 import base64
@@ -13,7 +13,7 @@ from app.config import get_settings
 from app.db import get_engine
 from app.models import AdminUser, Brand, Client, License, PokerTable
 from app.security import generate_private_key, hash_password, keyed_hash, new_activation_key, normalize_activation_key
-from app.services import audit, licenses
+from app.services import audit, licenses, pairing
 
 # Neutral demo data: no real brand name lives in code (SPEC 10.1).
 DEMO_BRAND = {
@@ -88,6 +88,22 @@ def seed(session: Session) -> str | None:
     return key
 
 
+def pairing_code(session: Session, client_name: str, table_number: int = 1) -> tuple[str, datetime]:
+    """A phone pairing code for a client's table, as the Windows app would show it (SPEC 9.2).
+
+    For setting up and testing a camera before the PC is there; the code lives 5 minutes.
+    """
+    client = session.scalar(select(Client).where(Client.name == client_name))
+    if client is None:
+        raise SystemExit(f"no client named {client_name!r}")
+    table = session.scalar(
+        select(PokerTable).where(PokerTable.client_id == client.id, PokerTable.number == table_number)
+    )
+    if table is None:
+        raise SystemExit(f"{client_name!r} has no table {table_number}")
+    return pairing.issue_code(session, table, "cli", datetime.now(UTC))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -99,6 +115,9 @@ def main(argv: list[str] | None = None) -> int:
     client.add_argument("name")
     client.add_argument("--tables", type=int, default=1)
     commands.add_parser("seed", help="demo brand, client and table; admin from ADMIN_EMAIL / ADMIN_PASSWORD")
+    code = commands.add_parser("pairing-code", help="a 5-minute code that pairs a phone with a client's table")
+    code.add_argument("client", help="the client's name, e.g. 'Demo club'")
+    code.add_argument("--table", type=int, default=1)
     args = parser.parse_args(argv)
 
     if args.command == "gen-keys":
@@ -110,6 +129,11 @@ def main(argv: list[str] | None = None) -> int:
             print("admin created" if created else "admin password updated")
         elif args.command == "create-client":
             print(create_client(session, args.name, args.tables))
+        elif args.command == "pairing-code":
+            value, expires_at = pairing_code(session, args.client, args.table)
+            print(f"code: {value}")
+            print(f"server: {get_settings().public_api_url}")
+            print(f"valid until: {expires_at:%H:%M:%S} UTC")
         else:
             key = seed(session)
             print(f"demo client created, activation key: {key}" if key else "demo data already there")

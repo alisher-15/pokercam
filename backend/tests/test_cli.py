@@ -81,3 +81,21 @@ def test_create_client_prints_a_working_key(db: Session) -> None:
     assert db.scalar(select(func.count()).where(PokerTable.client_id == client.id)) == 2
     assert db.scalar(select(License.max_tables).where(License.client_id == client.id)) == 2
     create_client(db, "Acceptance 2")  # reuses the demo brand
+
+
+def test_pairing_code_pairs_a_phone_with_the_table(db: Session, client) -> None:
+    """For a camera set up before the Windows app exists: the code works with POST /device/pair."""
+    from app.cli import create_client, pairing_code
+
+    create_client(db, "Club", tables=2)
+    db.commit()
+    code, _ = pairing_code(db, "Club", table_number=2)
+    db.commit()
+    response = client.post("/api/v1/device/pair", json={"code": code, "model": "MatePad", "android_id": "a1"})
+    assert response.status_code == 200
+    table = db.scalar(select(PokerTable).where(PokerTable.number == 2))
+    assert response.json()["table_id"] == str(table.id)
+    with pytest.raises(SystemExit, match="no client"):
+        pairing_code(db, "Nobody")
+    with pytest.raises(SystemExit, match="no table 5"):
+        pairing_code(db, "Club", table_number=5)

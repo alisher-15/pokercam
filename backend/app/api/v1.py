@@ -1,8 +1,7 @@
 """Public REST API of SPEC 5.2. Bodies are the classes generated from contracts/rest."""
 
-import json
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Request
 from sqlalchemy import select
@@ -25,17 +24,15 @@ from app.models import Client, Device, License, PairingCode, PokerTable, Viewer
 from app.security import (
     issue_access_token,
     keyed_hash,
-    new_pairing_code,
     new_refresh_token,
     normalize_activation_key,
     token_hash,
 )
-from app.services import audit, licenses
+from app.services import audit, licenses, pairing
 from app.services.ratelimit import RateLimiter
 
 router = APIRouter(prefix="/api/v1", responses=ERRORS)
 
-PAIRING_CODE_TTL = timedelta(minutes=5)
 
 # SPEC 9.2: at most 5 code attempts a minute from one IP. Activation keys get the same guard.
 pairing_limiter = RateLimiter(limit=5)
@@ -250,26 +247,9 @@ def create_pairing_code(table_id: uuid.UUID, claims: ViewerDep, session: Session
     now = _now()
     table = _own_table(session, table_id, claims.client_id)
     _require_access(_license(session, claims.client_id), now)
-    live = select(PairingCode.id).where(PairingCode.used_at.is_(None), PairingCode.expires_at >= now)
-    for _ in range(10):
-        code = new_pairing_code()
-        if session.scalar(live.where(PairingCode.code_hash == keyed_hash(code))) is None:
-            break
-    else:
-        raise ApiException(409, "conflict", "Could not find a free pairing code, try again")
-    expires_at = now + PAIRING_CODE_TTL
-    session.add(PairingCode(code_hash=keyed_hash(code), table_id=table.id, expires_at=expires_at))
-    audit.record(
-        session,
-        actor=f"viewer:{claims.sub}",
-        action="pairing_code.created",
-        entity="poker_table",
-        entity_id=table.id,
-        client_id=claims.client_id,
-    )
+    code, expires_at = pairing.issue_code(session, table, f"viewer:{claims.sub}", now)
     session.commit()
-    qr = json.dumps({"v": 1, "api": get_settings().public_api_url, "code": code}, separators=(",", ":"))
-    return PairingCodeResponse(code=code, expires_at=expires_at, qr_payload=qr)
+    return PairingCodeResponse(code=code, expires_at=expires_at, qr_payload=pairing.qr_payload(code))
 
 
 @router.get("/brand", **_NO_NULLS)
