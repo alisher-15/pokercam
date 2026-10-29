@@ -48,6 +48,14 @@ abstract interface class Publisher {
   Future<void> closeCamera();
 }
 
+/// The one encoding the camera sends. The scalability mode must be set: the library reads it with `!`
+/// (unified_plan.dart, send) and its produce queue swallows the null-check error, leaving produce hanging.
+RtpEncodingParameters cameraEncoding(int maxBitrate) => RtpEncodingParameters(
+  maxBitrate: maxBitrate,
+  maxFramerate: 30,
+  scalabilityMode: 'L1T1',
+);
+
 /// flutter_webrtc for the camera and mediasoup's Device API for the transport (CLAUDE.md: never hand-built SDP).
 class MediasoupPublisher implements Publisher {
   MediasoupPublisher(this._log);
@@ -116,6 +124,7 @@ class MediasoupPublisher implements Publisher {
       },
     );
     _transport = transport;
+    _log.info('send transport created', {'transport_id': transport.id});
     transport.on('connect', (Map data) {
       socket
           .request('signaling.connect_transport', {
@@ -125,7 +134,10 @@ class MediasoupPublisher implements Publisher {
           })
           .then(
             (_) => data['callback'](),
-            onError: (Object e) => data['errback'](e),
+            onError: (Object e) {
+              _log.warn('connect_transport refused', {'error': '$e'});
+              data['errback'](e);
+            },
           );
     });
     transport.on('produce', (Map data) {
@@ -139,11 +151,15 @@ class MediasoupPublisher implements Publisher {
           })
           .then(
             (reply) => data['callback'](reply['producer_id']),
-            onError: (Object e) => data['errback'](e),
+            onError: (Object e) {
+              _log.warn('produce refused', {'error': '$e'});
+              data['errback'](e);
+            },
           );
     });
     transport.on('connectionstatechange', (Map data) {
       final state = data['connectionState'];
+      _log.info('send transport state', {'state': '$state'});
       if ((state == 'failed' || state == 'disconnected' || state == 'closed') &&
           identical(_transport, transport)) {
         _log.warn('send transport $state');
@@ -165,11 +181,15 @@ class MediasoupPublisher implements Publisher {
       source: 'camera',
       codec: h264,
       stopTracks: false,
-      encodings: [
-        RtpEncodingParameters(maxBitrate: maxBitrate, maxFramerate: 30),
-      ],
+      encodings: [cameraEncoding(maxBitrate)],
     );
-    final producer = await produced.future.timeout(const Duration(seconds: 15));
+    // The library reports no error from produce (its queue drops it), so a failure here is only a timeout.
+    final producer = await produced.future.timeout(
+      const Duration(seconds: 15),
+      onTimeout: () => throw TimeoutException(
+        'produce did not complete (codec ${h264?.mimeType ?? 'router default'})',
+      ),
+    );
     _producer = producer;
     // SPEC 6.3: under pressure drop frames, never resolution (the cards must stay readable).
     final sender = producer.rtpSender;
