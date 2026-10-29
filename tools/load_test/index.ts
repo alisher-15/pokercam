@@ -46,7 +46,9 @@ const stats = fs.readdirSync("/proc").filter((p) => /^\\d+$/.test(p)).flatMap((p
     const stat = fs.readFileSync("/proc/" + pid + "/stat", "utf8");
     const f = stat.slice(stat.lastIndexOf(")") + 2).split(" ");
     const rss = /VmRSS:\\s+(\\d+)/.exec(fs.readFileSync("/proc/" + pid + "/status", "utf8"));
-    return [{ pid: Number(pid), ppid: Number(f[1]), ticks: Number(f[11]) + Number(f[12]), rssKb: rss ? Number(rss[1]) : 0 }];
+    const comm = fs.readFileSync("/proc/" + pid + "/comm", "utf8").trim();
+    const kind = comm === "ffmpeg" ? "ffmpeg" : comm.startsWith("mediasoup-work") ? "workers" : "node";
+    return [{ pid: Number(pid), ppid: Number(f[1]), ticks: Number(f[11]) + Number(f[12]), rssKb: rss ? Number(rss[1]) : 0, kind }];
   } catch { return []; }
 });
 let mine = stats.filter((s) => s.pid !== process.pid);
@@ -59,11 +61,15 @@ let dvrBytes = 0;
 const walk = (dir) => { for (const e of fs.readdirSync(dir, { withFileTypes: true })) { const p = dir + "/" + e.name; try { if (e.isDirectory()) walk(p); else dvrBytes += fs.statSync(p).size; } catch {} } };
 try { walk(dvr); } catch {}
 const dvrMb = dvrBytes / 1048576;
-console.log(JSON.stringify({ rssKb: mine.reduce((a, s) => a + s.rssKb, 0), ticks: mine.reduce((a, s) => a + s.ticks, 0), procs: mine.length, dvrMb }));
+const byKind = (k) => mine.filter((s) => s.kind === k).reduce((a, s) => a + s.rssKb, 0);
+console.log(JSON.stringify({ rssKb: mine.reduce((a, s) => a + s.rssKb, 0), nodeKb: byKind("node"), workersKb: byKind("workers"), ffmpegKb: byKind("ffmpeg"), ticks: mine.reduce((a, s) => a + s.ticks, 0), procs: mine.length, dvrMb }));
 `;
 
 interface Snapshot {
   rssKb: number;
+  nodeKb: number;
+  workersKb: number;
+  ffmpegKb: number;
   ticks: number;
   procs: number;
   dvrMb: number;
@@ -81,11 +87,18 @@ async function snapshot(): Promise<Snapshot> {
 interface Sample {
   minute: number;
   rssMb: number;
+  /** The same split by process: media-server's Node, mediasoup workers, FFmpeg. */
+  nodeMb: number;
+  workersMb: number;
+  ffmpegMb: number;
   cpuPercent: number;
   procs: number;
   dvrMb: number;
-  /** Lowest decoded fps among viewers. */
+  /** Lowest decoded fps among viewers, and lowest sent fps among cameras: tells a server stall from a bot's. */
   minViewerFps: number;
+  minCameraFps: number;
+  /** Cameras whose encoder is held back (by CPU or bandwidth) in this sample. */
+  camerasLimited: number;
   packetsLost: number;
   freezes: number;
   errors: number;
@@ -119,14 +132,20 @@ try {
     const now = await snapshot();
     const at = Date.now();
     const states: BotState[] = await Promise.all([...cameras, ...viewers].map((b) => b.state()));
+    const cameraStates = states.slice(0, cameras.length);
     const viewerStates = states.slice(cameras.length);
     const sample: Sample = {
       minute: Number(((at - startedAt) / 60_000).toFixed(2)),
       rssMb: Number((now.rssKb / 1024).toFixed(1)),
+      nodeMb: Number((now.nodeKb / 1024).toFixed(1)),
+      workersMb: Number((now.workersKb / 1024).toFixed(1)),
+      ffmpegMb: Number((now.ffmpegKb / 1024).toFixed(1)),
       cpuPercent: Number((((now.ticks - previous.ticks) / tick / ((at - previousAt) / 1000)) * 100).toFixed(1)),
       procs: now.procs,
       dvrMb: Number(now.dvrMb.toFixed(1)),
       minViewerFps: Math.min(...viewerStates.map((s) => s.fps)),
+      minCameraFps: Math.min(...cameraStates.map((s) => s.fps)),
+      camerasLimited: cameraStates.filter((s) => s.qualityLimitation !== null && s.qualityLimitation !== "none").length,
       packetsLost: states.reduce((a, s) => a + Math.max(0, s.packetsLost), 0),
       freezes: viewerStates.reduce((a, s) => a + s.freezes, 0),
       errors: states.filter((s) => s.error !== null).length,
@@ -155,7 +174,12 @@ const checks = [
 ];
 for (const c of checks) console.log(`${c.ok ? "PASS" : "FAIL"}  ${c.check}: ${c.detail}`);
 
-const csv = ["minute,rss_mb,cpu_percent,procs,dvr_mb,min_viewer_fps,packets_lost,freezes,errors", ...samples.map((s) => [s.minute, s.rssMb, s.cpuPercent, s.procs, s.dvrMb, s.minViewerFps, s.packetsLost, s.freezes, s.errors].join(","))];
+const csv = [
+  "minute,rss_mb,node_mb,workers_mb,ffmpeg_mb,cpu_percent,procs,dvr_mb,min_viewer_fps,min_camera_fps,cameras_limited,packets_lost,freezes,errors",
+  ...samples.map((s) =>
+    [s.minute, s.rssMb, s.nodeMb, s.workersMb, s.ffmpegMb, s.cpuPercent, s.procs, s.dvrMb, s.minViewerFps, s.minCameraFps, s.camerasLimited, s.packetsLost, s.freezes, s.errors].join(","),
+  ),
+];
 await writeFile(join(out, "samples.csv"), `${csv.join("\n")}\n`);
 await writeFile(join(out, "summary.json"), `${JSON.stringify({ tables, viewers_per_table: viewersPerTable, duration_min: Number(args.duration), checks, passed: checks.every((c) => c.ok) }, null, 2)}\n`);
 await writeFile(join(out, "chart.svg"), chart(samples));
