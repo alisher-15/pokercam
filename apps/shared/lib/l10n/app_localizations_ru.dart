@@ -275,4 +275,229 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get preflightLicenseUnknown => 'не проверить: нет связи с сервером';
+
+  @override
+  String get activationTitle => 'Подключение компьютера';
+
+  @override
+  String get activationServerLabel => 'Адрес сервера';
+
+  @override
+  String get activationKeyLabel => 'Ключ активации клуба';
+
+  @override
+  String get activationNameLabel => 'Название этого компьютера';
+
+  @override
+  String get activationNameDefault => 'Компьютер клуба';
+
+  @override
+  String get activationSubmit => 'Подключить';
+
+  @override
+  String get activationErrorKey => 'Неверный ключ активации.';
+
+  @override
+  String get errorTooMany =>
+      'Слишком много попыток: подождите минуту и попробуйте снова.';
+
+  @override
+  String get errorUnreachable => 'Сервер недоступен. Проверьте адрес и сеть.';
+
+  @override
+  String get errorRevoked =>
+      'Этот компьютер отключён в админке. Подключите его заново.';
+
+  @override
+  String get errorLicense =>
+      'Доступ клуба заблокирован. Обратитесь к продавцу, чтобы продлить.';
+
+  @override
+  String errorOther(String code) {
+    return 'Что-то пошло не так ($code).';
+  }
+
+  @override
+  String get retry => 'Повторить';
+
+  @override
+  String get tablesTitle => 'Столы';
+
+  @override
+  String tableName(int number) {
+    return 'Стол $number';
+  }
+
+  @override
+  String get tableCameraOnline => 'камера в эфире';
+
+  @override
+  String get tableCameraOffline => 'камеры нет';
+
+  @override
+  String tableCameraLastSeen(String time) {
+    return 'камера была в сети $time';
+  }
+
+  @override
+  String get tablesEmpty => 'У клуба нет столов.';
+
+  @override
+  String get tableOpen => 'Открыть';
+
+  @override
+  String get tableOpenWindow => 'В новом окне';
+
+  @override
+  String get signOut => 'Выйти';
+
+  @override
+  String get pairPhone => 'Привязать телефон';
+
+  @override
+  String pairPhoneTitle(int number) {
+    return 'Привязка телефона к столу $number';
+  }
+
+  @override
+  String get pairPhoneHint =>
+      'В приложении камеры наведите камеру на этот QR-код или введите код вручную.';
+
+  @override
+  String pairPhoneServer(String url) {
+    return 'Сервер: $url';
+  }
+
+  @override
+  String pairPhoneExpires(String time) {
+    return 'Действует до $time. Текущий телефон стола отключится, когда привяжется новый.';
+  }
+
+  @override
+  String get pairPhoneNewCode => 'Новый код';
+
+  @override
+  String get close => 'Закрыть';
+
+  @override
+  String get watchWaiting => 'Ждём камеру стола…';
+
+  @override
+  String get watchCameraOffline => 'Камера не в сети';
+
+  @override
+  String watchCameraOfflineSince(String time) {
+    return 'Камера не в сети с $time';
+  }
+
+  @override
+  String get watchRoomFull => 'Этот стол уже смотрит другой компьютер.';
+
+  @override
+  String get panelCamera => 'Камера';
+
+  @override
+  String get panelDevice => 'Телефон';
+
+  @override
+  String get panelAlerts => 'Предупреждения';
+
+  @override
+  String get alertsEmpty => 'Предупреждений пока нет';
+
+  @override
+  String get modeAuto => 'Авто';
+
+  @override
+  String get modeManual => 'Ручной';
+
+  @override
+  String get modePreset => 'Пресет';
+
+  @override
+  String get presetIncandescent => 'Лампа накаливания';
+
+  @override
+  String get presetFluorescent => 'Люминесцентная';
+
+  @override
+  String get presetWarmFluorescent => 'Тёплая люминесцентная';
+
+  @override
+  String get presetDaylight => 'Дневной свет';
+
+  @override
+  String get presetCloudyDaylight => 'Облачно';
+
+  @override
+  String get presetTwilight => 'Сумерки';
+
+  @override
+  String get presetShade => 'Тень';
+
+  @override
+  String get resetDefaults => 'Сбросить по умолчанию';
+
+  @override
+  String get notSupportedHint => 'Камера этого телефона это не умеет';
+
+  @override
+  String cameraSetFailed(String param, String error) {
+    return 'Камера не применила «$param»: $error';
+  }
+
+  @override
+  String get deviceBattery => 'Заряд';
+
+  @override
+  String deviceBatteryValue(int pct) {
+    return '$pct %';
+  }
+
+  @override
+  String deviceCharging(int pct) {
+    return '$pct %, заряжается';
+  }
+
+  @override
+  String get deviceTemperature => 'Температура';
+
+  @override
+  String deviceTemperatureValue(String temp) {
+    return '$temp °C';
+  }
+
+  @override
+  String get deviceNetwork => 'Сеть';
+
+  @override
+  String deviceSignal(int dbm) {
+    return '$dbm dBm';
+  }
+
+  @override
+  String deviceRtt(int ms) {
+    return 'задержка $ms мс';
+  }
+
+  @override
+  String get deviceBitrate => 'Битрейт';
+
+  @override
+  String get deviceFps => 'Кадры';
+
+  @override
+  String get deviceDropped => 'Пропущено кадров';
+
+  @override
+  String get deviceConnection => 'Соединение';
+
+  @override
+  String get connectionLive => 'в эфире';
+
+  @override
+  String get connectionOffline => 'камера не в сети';
+
+  @override
+  String get deviceNoData => 'данных с телефона пока нет';
 }

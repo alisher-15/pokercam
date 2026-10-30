@@ -275,4 +275,230 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get preflightLicenseUnknown =>
       'cannot check: no connection to the server';
+
+  @override
+  String get activationTitle => 'Connect this computer';
+
+  @override
+  String get activationServerLabel => 'Server address';
+
+  @override
+  String get activationKeyLabel => 'Club activation key';
+
+  @override
+  String get activationNameLabel => 'This computer\'s name';
+
+  @override
+  String get activationNameDefault => 'Club PC';
+
+  @override
+  String get activationSubmit => 'Connect';
+
+  @override
+  String get activationErrorKey => 'Wrong activation key.';
+
+  @override
+  String get errorTooMany => 'Too many attempts: wait a minute and try again.';
+
+  @override
+  String get errorUnreachable =>
+      'The server cannot be reached. Check the address and the network.';
+
+  @override
+  String get errorRevoked =>
+      'This computer was disconnected in the admin panel. Connect it again.';
+
+  @override
+  String get errorLicense =>
+      'The club\'s access is blocked. Contact your seller to renew it.';
+
+  @override
+  String errorOther(String code) {
+    return 'Something went wrong ($code).';
+  }
+
+  @override
+  String get retry => 'Try again';
+
+  @override
+  String get tablesTitle => 'Tables';
+
+  @override
+  String tableName(int number) {
+    return 'Table $number';
+  }
+
+  @override
+  String get tableCameraOnline => 'camera on air';
+
+  @override
+  String get tableCameraOffline => 'no camera';
+
+  @override
+  String tableCameraLastSeen(String time) {
+    return 'camera last seen $time';
+  }
+
+  @override
+  String get tablesEmpty => 'The club has no tables.';
+
+  @override
+  String get tableOpen => 'Open';
+
+  @override
+  String get tableOpenWindow => 'In a new window';
+
+  @override
+  String get signOut => 'Sign out';
+
+  @override
+  String get pairPhone => 'Pair a phone';
+
+  @override
+  String pairPhoneTitle(int number) {
+    return 'Pair a phone with table $number';
+  }
+
+  @override
+  String get pairPhoneHint =>
+      'In the camera app, point the camera at this QR code or enter the code by hand.';
+
+  @override
+  String pairPhoneServer(String url) {
+    return 'Server: $url';
+  }
+
+  @override
+  String pairPhoneExpires(String time) {
+    return 'Valid until $time. The table\'s current phone stops when the new one pairs.';
+  }
+
+  @override
+  String get pairPhoneNewCode => 'New code';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get watchWaiting => 'Waiting for the table\'s camera…';
+
+  @override
+  String get watchCameraOffline => 'The camera is not online';
+
+  @override
+  String watchCameraOfflineSince(String time) {
+    return 'The camera has been offline since $time';
+  }
+
+  @override
+  String get watchRoomFull =>
+      'Another computer is already watching this table.';
+
+  @override
+  String get panelCamera => 'Camera';
+
+  @override
+  String get panelDevice => 'Phone';
+
+  @override
+  String get panelAlerts => 'Alerts';
+
+  @override
+  String get alertsEmpty => 'No alerts yet';
+
+  @override
+  String get modeAuto => 'Auto';
+
+  @override
+  String get modeManual => 'Manual';
+
+  @override
+  String get modePreset => 'Preset';
+
+  @override
+  String get presetIncandescent => 'Incandescent';
+
+  @override
+  String get presetFluorescent => 'Fluorescent';
+
+  @override
+  String get presetWarmFluorescent => 'Warm fluorescent';
+
+  @override
+  String get presetDaylight => 'Daylight';
+
+  @override
+  String get presetCloudyDaylight => 'Cloudy';
+
+  @override
+  String get presetTwilight => 'Twilight';
+
+  @override
+  String get presetShade => 'Shade';
+
+  @override
+  String get resetDefaults => 'Reset to defaults';
+
+  @override
+  String get notSupportedHint => 'This phone\'s camera cannot change this';
+
+  @override
+  String cameraSetFailed(String param, String error) {
+    return 'The camera did not apply $param: $error';
+  }
+
+  @override
+  String get deviceBattery => 'Battery';
+
+  @override
+  String deviceBatteryValue(int pct) {
+    return '$pct %';
+  }
+
+  @override
+  String deviceCharging(int pct) {
+    return '$pct %, charging';
+  }
+
+  @override
+  String get deviceTemperature => 'Temperature';
+
+  @override
+  String deviceTemperatureValue(String temp) {
+    return '$temp °C';
+  }
+
+  @override
+  String get deviceNetwork => 'Network';
+
+  @override
+  String deviceSignal(int dbm) {
+    return '$dbm dBm';
+  }
+
+  @override
+  String deviceRtt(int ms) {
+    return 'RTT $ms ms';
+  }
+
+  @override
+  String get deviceBitrate => 'Bitrate';
+
+  @override
+  String get deviceFps => 'Frame rate';
+
+  @override
+  String get deviceDropped => 'Dropped frames';
+
+  @override
+  String get deviceConnection => 'Connection';
+
+  @override
+  String get connectionLive => 'on air';
+
+  @override
+  String get connectionOffline => 'camera offline';
+
+  @override
+  String get deviceNoData => 'no data from the phone yet';
 }

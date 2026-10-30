@@ -71,6 +71,41 @@ class ApiClient {
         ),
       );
 
+  /// The PC's first start (SPEC 8.1): the club's activation key for this computer's refresh token.
+  Future<ViewerActivateResponse> activate({
+    required String activationKey,
+    required String machineId,
+    String? name,
+  }) async => ViewerActivateResponse.fromJson(
+    await _call(
+      'POST',
+      '/viewer/activate',
+      body: ViewerActivateRequest(
+        activationKey: activationKey,
+        machineId: machineId,
+        name: name,
+      ).toJson(),
+    ),
+  );
+
+  /// The club's tables with their cameras' status (a viewer token without a table).
+  Future<TableListResponse> tables(String accessToken) async =>
+      TableListResponse.fromJson(
+        await _call('GET', '/tables', accessToken: accessToken),
+      );
+
+  /// A 5-minute code and its QR text that pair a new phone with the table (SPEC 9.2).
+  Future<PairingCodeResponse> pairingCode(
+    String accessToken,
+    String tableId,
+  ) async => PairingCodeResponse.fromJson(
+    await _call(
+      'POST',
+      '/tables/$tableId/pairing-code',
+      accessToken: accessToken,
+    ),
+  );
+
   /// The client's license (SPEC 9.1: at start and hourly).
   Future<LicenseResponse> license(String accessToken) async =>
       LicenseResponse.fromJson(

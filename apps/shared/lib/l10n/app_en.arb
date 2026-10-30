@@ -364,5 +364,164 @@
   "preflightLicenseUnknown": "cannot check: no connection to the server",
   "@preflightLicenseUnknown": {
     "description": "License detail when the backend cannot be reached."
-  }
+  },
+  "activationTitle": "Connect this computer",
+  "activationServerLabel": "Server address",
+  "activationKeyLabel": "Club activation key",
+  "activationNameLabel": "This computer's name",
+  "activationNameDefault": "Club PC",
+  "activationSubmit": "Connect",
+  "activationErrorKey": "Wrong activation key.",
+  "errorTooMany": "Too many attempts: wait a minute and try again.",
+  "errorUnreachable": "The server cannot be reached. Check the address and the network.",
+  "errorRevoked": "This computer was disconnected in the admin panel. Connect it again.",
+  "errorLicense": "The club's access is blocked. Contact your seller to renew it.",
+  "errorOther": "Something went wrong ({code}).",
+  "@errorOther": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "retry": "Try again",
+  "tablesTitle": "Tables",
+  "tableName": "Table {number}",
+  "@tableName": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "tableCameraOnline": "camera on air",
+  "tableCameraOffline": "no camera",
+  "tableCameraLastSeen": "camera last seen {time}",
+  "@tableCameraLastSeen": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "tablesEmpty": "The club has no tables.",
+  "tableOpen": "Open",
+  "tableOpenWindow": "In a new window",
+  "signOut": "Sign out",
+  "pairPhone": "Pair a phone",
+  "pairPhoneTitle": "Pair a phone with table {number}",
+  "@pairPhoneTitle": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "pairPhoneHint": "In the camera app, point the camera at this QR code or enter the code by hand.",
+  "pairPhoneServer": "Server: {url}",
+  "@pairPhoneServer": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "pairPhoneExpires": "Valid until {time}. The table's current phone stops when the new one pairs.",
+  "@pairPhoneExpires": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "pairPhoneNewCode": "New code",
+  "close": "Close",
+  "watchWaiting": "Waiting for the table's camera…",
+  "watchCameraOffline": "The camera is not online",
+  "watchCameraOfflineSince": "The camera has been offline since {time}",
+  "@watchCameraOfflineSince": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "watchRoomFull": "Another computer is already watching this table.",
+  "panelCamera": "Camera",
+  "panelDevice": "Phone",
+  "panelAlerts": "Alerts",
+  "alertsEmpty": "No alerts yet",
+  "modeAuto": "Auto",
+  "modeManual": "Manual",
+  "modePreset": "Preset",
+  "presetIncandescent": "Incandescent",
+  "presetFluorescent": "Fluorescent",
+  "presetWarmFluorescent": "Warm fluorescent",
+  "presetDaylight": "Daylight",
+  "presetCloudyDaylight": "Cloudy",
+  "presetTwilight": "Twilight",
+  "presetShade": "Shade",
+  "resetDefaults": "Reset to defaults",
+  "notSupportedHint": "This phone's camera cannot change this",
+  "cameraSetFailed": "The camera did not apply {param}: {error}",
+  "@cameraSetFailed": {
+    "placeholders": {
+      "param": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceBattery": "Battery",
+  "deviceBatteryValue": "{pct} %",
+  "@deviceBatteryValue": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "deviceCharging": "{pct} %, charging",
+  "@deviceCharging": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "deviceTemperature": "Temperature",
+  "deviceTemperatureValue": "{temp} °C",
+  "@deviceTemperatureValue": {
+    "placeholders": {
+      "temp": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceNetwork": "Network",
+  "deviceSignal": "{dbm} dBm",
+  "@deviceSignal": {
+    "placeholders": {
+      "dbm": {
+        "type": "int"
+      }
+    }
+  },
+  "deviceRtt": "RTT {ms} ms",
+  "@deviceRtt": {
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "deviceBitrate": "Bitrate",
+  "deviceFps": "Frame rate",
+  "deviceDropped": "Dropped frames",
+  "deviceConnection": "Connection",
+  "connectionLive": "on air",
+  "connectionOffline": "camera offline",
+  "deviceNoData": "no data from the phone yet"
 }

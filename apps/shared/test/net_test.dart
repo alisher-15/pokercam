@@ -119,6 +119,53 @@ void main() {
       },
     );
 
+    test(
+      'a PC activates, lists the tables and gets a pairing code (SPEC 8.1)',
+      () async {
+        final sent = <http.Request>[];
+        final api = ApiClient(
+          'http://h',
+          client: MockClient((request) async {
+            sent.add(request);
+            return switch (request.url.path) {
+              '/api/v1/viewer/activate' => http.Response(
+                '{"refresh_token":"rt","viewer_id":"8d4b1f6e-3a2c-4d9f-a7e5-1c6b0e9f2d74","client_id":"6a0d3b1e-2f4c-4e8a-b1d7-5c9e8f2a4b60"}',
+                200,
+              ),
+              '/api/v1/tables' => http.Response(
+                '{"tables":[{"id":"t1","name":"1","number":1,"camera_online":true,"camera_last_seen_at":"2026-10-30T18:00:00Z"}]}',
+                200,
+              ),
+              _ => http.Response(
+                '{"code":"482913","expires_at":"2026-10-30T18:05:00Z","qr_payload":"{\\"v\\":1}"}',
+                200,
+              ),
+            };
+          }),
+        );
+        final activated = await api.activate(
+          activationKey: 'KEY',
+          machineId: 'm1',
+          name: 'PC 1',
+        );
+        expect(activated.refreshToken, 'rt');
+        expect(jsonDecode(sent[0].body), {
+          'activation_key': 'KEY',
+          'machine_id': 'm1',
+          'name': 'PC 1',
+        });
+        final tables = await api.tables('a');
+        expect(sent[1].headers['Authorization'], 'Bearer a');
+        expect(tables.tables.single.cameraOnline, isTrue);
+        final code = await api.pairingCode('a', 't1');
+        expect(
+          (sent[2].method, sent[2].url.path),
+          ('POST', '/api/v1/tables/t1/pairing-code'),
+        );
+        expect((code.code, code.qrPayload), ('482913', '{"v":1}'));
+      },
+    );
+
     test('errors carry the status and the contract error code', () async {
       final api = ApiClient(
         'http://h',
