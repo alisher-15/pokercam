@@ -74,7 +74,15 @@ try {
   // 1. Pairing and the first frames on the PC.
   const live = await until(viewer, (s) => s.frames > 10, 90_000);
   const pairingS = (Date.now() - pairingRequestedAt) / 1000;
-  check("pairing by code → video on the PC in < 1 min", live.state.frames > 10 && pairingS < 60, `${pairingS.toFixed(1)} s, ${live.state.codec ?? "?"} ${String(live.state.width)}x${String(live.state.height)}`);
+  const seen = live.state;
+  const stream = (seen.telemetry?.stream ?? {}) as Partial<Record<"fps" | "bitrate_kbps" | "dropped_frames", number>>;
+  check(
+    "pairing by code → video on the PC in < 1 min",
+    seen.frames > 10 && pairingS < 60,
+    `${pairingS.toFixed(1)} s, ${seen.codec ?? "?"} ${String(seen.width)}x${String(seen.height)}; ` +
+      `PC: ${String(seen.frames)} frames, ${String(seen.fps)} fps, lost ${String(seen.packetsLost)}, dropped ${String(seen.framesDropped)}, freezes ${String(seen.freezes)}; ` +
+      `phone: ${String(stream.fps ?? "?")} fps, ${String(stream.bitrate_kbps ?? "?")} kbit/s, dropped ${String(stream.dropped_frames ?? "?")}`,
+  );
   if (live.state.frames <= 10) throw new Error("no video from the app: the other checks need it");
 
   // 2. Every setting the camera supports, from the PC; the rest refused honestly.

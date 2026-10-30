@@ -74,9 +74,19 @@ Future<void> _untilReady(Transport transport) async {
 
 /// flutter_webrtc for the camera and mediasoup's Device API for the transport (CLAUDE.md: never hand-built SDP).
 class MediasoupPublisher implements Publisher {
-  MediasoupPublisher(this._log);
+  MediasoupPublisher(
+    this._log, {
+    this.width = 1920,
+    this.height = 1080,
+    this.frameRate = 30,
+  });
 
   final JsonLog _log;
+
+  /// What the camera is opened at: SPEC 6.3 1080p30 (the CI emulator encodes in software and asks for less).
+  final int width;
+  final int height;
+  final int frameRate;
   MediaStream? _stream;
   Transport? _transport;
   Producer? _producer;
@@ -97,9 +107,9 @@ class MediasoupPublisher implements Publisher {
       'audio': false,
       'video': {
         'facingMode': 'environment',
-        'width': 1920,
-        'height': 1080,
-        'frameRate': 30,
+        'width': width,
+        'height': height,
+        'frameRate': frameRate,
       },
     });
     _stream = stream;

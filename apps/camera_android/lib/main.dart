@@ -17,7 +17,14 @@ void main() {
         settings: PreferencesSettingsStore(),
         camera: Camera2Channel(),
         device: DeviceChannel(),
-        publisher: MediasoupPublisher(log),
+        publisher: MediasoupPublisher(
+          log,
+          width: const int.fromEnvironment('CAPTURE_WIDTH', defaultValue: 1920),
+          height: const int.fromEnvironment(
+            'CAPTURE_HEIGHT',
+            defaultValue: 1080,
+          ),
+        ),
         log: log,
       ),
     ),

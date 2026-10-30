@@ -23,8 +23,10 @@ granter=$!
 (cd ../../tools && node acceptance/stage5.ts --key "$CLUB_KEY" --phone-api "http://$HOST_IP:8000" --port 8765) > build/harness.log 2>&1 &
 harness=$!
 
+# The emulator has no H.264 and encodes VP8 in software: at its camera's 1856x1392 the PC got under 10 frames
+# in 90 s. SPEC 6.5's 1080p30 is checked on the reference phone; the flows here are the same at 640x480.
 flutter test integration_test/e2e_test.dart -d emulator-5554 --dart-define=E2E_HARNESS="http://$HOST_IP:8765" \
-  --reporter expanded 2>&1 | tee build/e2e-test.log
+  --dart-define=CAPTURE_WIDTH=640 --dart-define=CAPTURE_HEIGHT=480 --reporter expanded 2>&1 | tee build/e2e-test.log
 app_status=${PIPESTATUS[0]}
 wait "$harness"
 harness_status=$?
