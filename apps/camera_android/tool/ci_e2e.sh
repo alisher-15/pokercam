@@ -11,6 +11,8 @@ mkdir -p build
 # place. Granted again in a loop in case the update drops them, so no permission dialog stops the test.
 flutter build apk --debug
 adb install -r -g build/app/outputs/flutter-apk/app-debug.apk
+# The emulator's default ring buffer is overwritten by its camera HAL within minutes.
+adb logcat -G 16M >/dev/null 2>&1 || true
 (for _ in $(seq 1 4000); do
   adb shell pm grant "$PKG" android.permission.CAMERA >/dev/null 2>&1
   adb shell pm grant "$PKG" android.permission.POST_NOTIFICATIONS >/dev/null 2>&1
