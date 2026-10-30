@@ -21,7 +21,10 @@ Future<Map<String, dynamic>> call(String path, {Object? body}) async {
     final request = body == null
         ? await client.getUrl(Uri.parse('$harness$path'))
         : await client.postUrl(Uri.parse('$harness$path'));
-    if (body != null) request.write(jsonEncode(body));
+    if (body != null) {
+      request.headers.contentType = ContentType.json;
+      request.add(utf8.encode(jsonEncode(body)));
+    }
     final response = await request.close();
     return jsonDecode(await response.transform(utf8.decoder).join())
         as Map<String, dynamic>;
