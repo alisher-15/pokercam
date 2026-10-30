@@ -10,7 +10,7 @@ PYTHON ?= python3.12
 VENV := backend/.venv
 APPS := apps/shared apps/camera_android apps/viewer_windows
 
-.PHONY: help setup setup-backend setup-node setup-apps dev down logs db keys seed acceptance acceptance-dvr load-test \
+.PHONY: help setup setup-backend setup-node setup-apps dev down logs db keys seed acceptance acceptance-viewer acceptance-dvr load-test \
 	test test-contracts test-backend test-media-server test-apps \
 	lint lint-backend lint-media-server lint-tools lint-apps codegen l10n check-generated
 
@@ -52,6 +52,10 @@ seed: ## Demo brand, client with a paid month, one table; admin from ADMIN_EMAIL
 acceptance: ## Against `make dev`: a fake camera and MAX_VIEWERS_PER_TABLE fake viewers (stage 3)
 	key=$$(docker compose exec -T backend python -m app.cli create-client "Acceptance $$(date +%s)") && \
 	cd tools && node acceptance/stage3.ts --key "$$key" --viewers $${MAX_VIEWERS_PER_TABLE:-5}
+
+acceptance-viewer: ## Against `make dev`: the browser viewer at /viewer/ with a fake camera (stage 5 stand-in for the PC)
+	key=$$(docker compose exec -T backend python -m app.cli create-client "Viewer $$(date +%s)") && \
+	cd tools && node acceptance/viewer.ts --key "$$key"
 
 acceptance-dvr: ## Against `make dev`: DVR for DVR_MINUTES (11) min, FFmpeg killed, access, expired license (stage 4)
 	docker compose exec -T backend python -m app.cli create-admin "$$ADMIN_EMAIL" "$$ADMIN_PASSWORD" > /dev/null && \

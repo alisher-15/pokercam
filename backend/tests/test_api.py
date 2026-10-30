@@ -2,6 +2,7 @@ import json
 from datetime import UTC, datetime, timedelta
 
 import jwt
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
@@ -325,3 +326,28 @@ def test_media_server_verifies_tokens_with_the_published_key(client: TestClient,
     assert body["algorithm"] == "EdDSA"
     key = load_pem_public_key(body["public_key_pem"].encode())
     assert jwt.decode(token, key, algorithms=["EdDSA"])["role"] == "viewer"
+
+
+@pytest.mark.parametrize(
+    ("media_url", "origin"),
+    [("ws://203.0.113.5:3000/ws", "http://203.0.113.5:3000"), ("wss://media.club.kz/ws", "https://media.club.kz")],
+)
+def test_media_origin(media_url: str, origin: str) -> None:
+    from app.main import media_origin
+
+    assert media_origin(media_url) == origin
+
+
+@pytest.mark.parametrize(("origin", "allowed"), [("http://localhost:3000", True), ("http://evil.example", False)])
+def test_only_the_browser_viewer_on_media_server_may_call_the_api_from_a_page(
+    client: TestClient, origin: str, allowed: bool
+) -> None:
+    preflight = client.options(
+        "/api/v1/auth/token",
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert preflight.headers.get("access-control-allow-origin") == (origin if allowed else None)

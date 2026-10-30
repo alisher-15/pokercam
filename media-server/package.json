@@ -7,10 +7,11 @@
     "node": ">=24"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && npm run build:web",
+    "build:web": "esbuild web/viewer.ts --bundle --minify --format=esm --target=es2022 --outfile=dist/web/viewer.js && cp web/viewer.html dist/web/viewer.html",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p web",
     "lint": "eslint .",
     "test": "vitest run"
   },
@@ -25,7 +26,10 @@
     "@eslint/js": "10.0.1",
     "@types/node": "24.19.2",
     "@types/ws": "^8.18.2",
+    "esbuild": "0.28.2",
     "eslint": "10.13.0",
+    "mediasoup-client": "3.25.3",
+    "qrcode-generator": "2.0.4",
     "tsx": "4.23.15",
     "typescript": "6.0.3",
     "typescript-eslint": "8.72.1",

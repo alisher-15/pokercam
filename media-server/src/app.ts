@@ -1,4 +1,4 @@
-import type { Server } from "node:http";
+import type { IncomingMessage, Server, ServerResponse } from "node:http";
 import type { Logger } from "pino";
 import { TokenVerifier } from "./auth/jwt.js";
 import { BackendClient } from "./backend.js";
@@ -11,6 +11,7 @@ import { RoomRegistry } from "./rooms/registry.js";
 import { roomLicenseStatus } from "./rooms/room.js";
 import { WorkerPool } from "./rooms/workers.js";
 import { SignalingServer } from "./signaling/server.js";
+import { WEB_DIR, webRoute } from "./web.js";
 
 /** How long a license answer fetched for a DVR request (a table without a room) is reused. */
 const LICENSE_CACHE_MS = 60_000;
@@ -62,7 +63,10 @@ export async function createApp(config: Config, log: Logger, keyRefetchMs?: numb
         return true;
       },
     },
-    dvr ? [(req, res) => handleDvr({ dvr, verifier, licenseOf, log }, req, res)] : [],
+    [
+      webRoute(WEB_DIR, log),
+      ...(dvr ? [(req: IncomingMessage, res: ServerResponse) => handleDvr({ dvr, verifier, licenseOf, log }, req, res)] : []),
+    ],
   );
   const signaling = new SignalingServer({ verifier, rooms, log });
   signaling.attach(server);

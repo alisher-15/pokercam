@@ -40,7 +40,7 @@ make acceptance-dvr  # после make dev: DVR 11 минут, kill FFmpeg, до
 make load-test LOAD_MINUTES=60  # после make dev: нагрузка, память и CPU media-server
 ```
 
-Установка на сервер (VPS или мини-ПК с Ubuntu): [deploy/README.md](deploy/README.md).
+Установка на сервер (VPS или мини-ПК с Ubuntu): [deploy/README.md](deploy/README.md). До Windows-клиента компьютер клуба — страница `http://IP:3000/viewer/` (видео, настройки камеры, привязка телефона по QR); локально `make acceptance-viewer` проверяет её с фейковой камерой.
 
 Админка: http://localhost:8000/admin (вход — `ADMIN_EMAIL` / `ADMIN_PASSWORD` из `.env`), API: http://localhost:8000/docs. Для production: `make keys >> .env` и `ENVIRONMENT=production`.
 

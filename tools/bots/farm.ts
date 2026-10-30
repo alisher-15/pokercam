@@ -101,6 +101,11 @@ export class BotFarm {
     return new Bot(name, page);
   }
 
+  /** A plain tab of the same browser (fake camera, autoplay), for a real page such as media-server's /viewer/. */
+  page(): Promise<Page> {
+    return this.browser.newPage({ locale: "en-US" });
+  }
+
   async close(): Promise<void> {
     await this.browser.close();
     this.server.close();
