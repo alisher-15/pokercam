@@ -63,6 +63,11 @@ class PairingCubit extends Cubit<PairingState> {
     } on ApiException catch (e) {
       services.log.warn('pairing failed', {'code': e.code, 'status': e.status});
       emit(PairingState(error: _error(e), errorCode: e.code));
+    } on Object catch (e) {
+      // Anything else (a malformed address, the phone's identity or secure storage failing) is shown as it is:
+      // left uncaught it kept the screen on "pairing…" for ever.
+      services.log.warn('pairing failed', {'error': '$e'});
+      emit(PairingState(error: PairingError.other, errorCode: '$e'));
     } finally {
       api.close();
     }

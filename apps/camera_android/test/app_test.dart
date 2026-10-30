@@ -138,6 +138,19 @@ void main() {
   });
 
   testWidgets(
+    'a failure on the phone itself says so instead of spinning for ever',
+    (tester) async {
+      final pairings = MemoryPairings()
+        ..saveError = Exception('KeyStoreException: Keystore operation failed');
+      await pump(tester, services(pairings: pairings));
+      await pairByHand(tester);
+      expect(find.textContaining('Keystore operation failed'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('Pair with a table'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'the check marks unsupported settings honestly and lets the paired phone start',
     (tester) async {
       await pump(tester, services(pairings: MemoryPairings(pairing)));

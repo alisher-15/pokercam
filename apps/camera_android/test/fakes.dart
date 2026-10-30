@@ -355,11 +355,15 @@ class MemoryPairings implements PairingStore {
   Pairing? value;
   String? last;
 
+  /// Thrown by [save], as the Keystore does on some phones.
+  Object? saveError;
+
   @override
   Future<Pairing?> load() async => value;
 
   @override
   Future<void> save(Pairing pairing) async {
+    if (saveError case final error?) throw error;
     value = pairing;
     last = pairing.apiUrl;
   }
