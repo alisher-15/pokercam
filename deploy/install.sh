@@ -34,6 +34,11 @@ done
 step() { printf '\n==> %s\n' "$*"; }
 
 step "Docker"
+# Some VPS get IPv6 addresses from DNS but have no IPv6 route: apt then fails on archive.ubuntu.com.
+if [ -z "$(ip -6 route show default 2>/dev/null)" ] && [ ! -e /etc/apt/apt.conf.d/99pokercam-ipv4 ]; then
+  echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99pokercam-ipv4
+  echo "no IPv6 route: apt goes over IPv4"
+fi
 if ! command -v docker >/dev/null || ! docker compose version >/dev/null 2>&1; then
   apt-get update -q
   apt-get install -yq ca-certificates curl git
