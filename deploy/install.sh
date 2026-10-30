@@ -136,7 +136,9 @@ fi
 cat <<SUMMARY
 
 Next:
-  1. In the admin panel: Clients -> create a client (a table is created with it).
+  1. A client with a paid month and table 1 (prints its activation key for the PC; keep it):
+       cd $DIR && docker compose exec backend python -m app.cli create-client "CLIENT NAME"
+     Or in the admin panel: Brands -> create a brand, then Clients -> create a client.
   2. Pair the camera phone with the client's table: a 6-digit code for 5 minutes:
        cd $DIR && docker compose exec backend python -m app.cli pairing-code "CLIENT NAME"
      In the camera app: "Enter the code" -> server http://$IP:8000 and the code.

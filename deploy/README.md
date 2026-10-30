@@ -28,8 +28,14 @@ curl -fsSL https://raw.githubusercontent.com/alisher-15/pokercam/main/deploy/ins
 
 Пока нет Windows-клиента (этап 6), код привязки выдаёт сервер:
 
-1. В админке `http://IP:8000/admin` → «Клиенты» → создать клиента (с ним создаётся стол 1).
-2. На сервере:
+1. Клиент с оплаченным месяцем и столом 1 — на сервере:
+
+   ```bash
+   cd /opt/pokercam && docker compose exec backend python -m app.cli create-client "Название клиента"
+   ```
+
+   Команда печатает ключ активации клиента для ПК — сохраните его. Или в админке `http://IP:8000/admin`: сначала «Бренды» → создать бренд, затем «Клиенты» → создать клиента (с ним создаётся стол 1).
+2. Код привязки — на сервере:
 
    ```bash
    cd /opt/pokercam && docker compose exec backend python -m app.cli pairing-code "Название клиента"
