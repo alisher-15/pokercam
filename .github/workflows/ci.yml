@@ -234,6 +234,11 @@ jobs:
     if: github.event_name != 'push' || github.ref == 'refs/heads/main'
     needs: apps
     runs-on: windows-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: pwsh
     steps:
       - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
@@ -241,8 +246,107 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-      - run: flutter build windows --debug
+      - run: flutter build windows --release
         working-directory: apps/viewer_windows
+      # Until the installer (stage 8): the release folder as a zip to unpack and run viewer_windows.exe.
+      - name: Publish to the viewer-windows pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          Compress-Archive -Path apps/viewer_windows/build/windows/x64/runner/Release/* -DestinationPath pokercam-viewer-windows.zip
+          gh release delete viewer-windows --yes --cleanup-tag 2>$null
+          gh release create viewer-windows pokercam-viewer-windows.zip --prerelease --target "$env:GITHUB_SHA" `
+            --title "PokerCam — программа для ПК (Windows)" `
+            --notes "Программа для компьютера клуба из ветки $env:GITHUB_REF_NAME, коммит $env:GITHUB_SHA. Распакуйте pokercam-viewer-windows.zip в любую папку и запустите viewer_windows.exe."
+
+  # Stage 6 (SPEC 12: the camera is controlled from the PC): the real Windows app against backend and
+  # media-server running on the same Windows machine (PostgreSQL is on the runner; no DVR, that is stage 7),
+  # with a fake camera in Chromium; tools/acceptance/stage6.ts + integration_test/e2e_test.dart.
+  windows-e2e:
+    name: Windows app against the servers (stage 6)
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
+    needs: [backend, media-server, apps]
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      DATABASE_URL: postgresql+psycopg://pokercam:pokercam@127.0.0.1:5432/pokercam
+      INTERNAL_API_TOKEN: windows-e2e-internal-token
+      PUBLIC_API_URL: http://127.0.0.1:8000
+      PUBLIC_MEDIA_URL: ws://127.0.0.1:3000/ws
+      MEDIA_SERVER_URL: http://127.0.0.1:3000
+      BACKEND_URL: http://127.0.0.1:8000
+      RTC_ANNOUNCED_ADDRESS: 127.0.0.1
+      DVR_ENABLED: "false"
+      MAX_VIEWERS_PER_TABLE: "2"
+      MEDIASOUP_WORKERS: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: PostgreSQL (installed on the runner, stopped)
+        run: |
+          $pg = Get-Service -Name postgresql*
+          Set-Service -InputObject $pg -Status running -StartupType automatic
+          $env:PGPASSWORD = 'root'
+          & "$env:PGBIN\psql" -U postgres -c "CREATE USER pokercam WITH PASSWORD 'pokercam'"
+          & "$env:PGBIN\psql" -U postgres -c "CREATE DATABASE pokercam OWNER pokercam"
+      - name: Backend
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          python -m alembic upgrade head
+          Start-Process python -ArgumentList '-m','uvicorn','app.main:app','--host','127.0.0.1','--port','8000' `
+            -RedirectStandardOutput ../backend.log -RedirectStandardError ../backend.err.log
+      - name: media-server
+        working-directory: media-server
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          Start-Process node -ArgumentList 'dist/index.js' -RedirectStandardOutput ../media-server.log -RedirectStandardError ../media-server.err.log
+      - name: Wait for both
+        run: |
+          foreach ($url in 'http://127.0.0.1:8000/health', 'http://127.0.0.1:3000/health') {
+            for ($i = 0; $i -lt 60; $i++) { try { Invoke-RestMethod $url | Out-Null; break } catch { Start-Sleep 2 } }
+            Invoke-RestMethod $url
+          }
+      - name: The fake camera (Chromium)
+        working-directory: tools
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install chromium
+      - name: "Acceptance: the Windows app controls the camera"
+        run: |
+          Push-Location backend
+          $key = (python -m app.cli create-client "Windows e2e").Trim()
+          Pop-Location
+          $harness = Start-Process node -ArgumentList 'acceptance/stage6.ts','--key',$key,'--port','8766' `
+            -WorkingDirectory tools -RedirectStandardOutput harness.log -RedirectStandardError harness.err.log -PassThru
+          for ($i = 0; $i -lt 90; $i++) { try { Invoke-RestMethod http://127.0.0.1:8766/setup | Out-Null; break } catch { Start-Sleep 2 } }
+          Push-Location apps/viewer_windows
+          flutter test integration_test/e2e_test.dart -d windows --dart-define=E2E_HARNESS=http://127.0.0.1:8766 --reporter expanded
+          $app = $LASTEXITCODE
+          Pop-Location
+          $harness.WaitForExit(600000) | Out-Null
+          Get-Content tools/harness.log
+          Write-Output "app test: $app, harness: $($harness.ExitCode)"
+          if ($app -ne 0 -or $harness.ExitCode -ne 0) { exit 1 }
+      - if: failure()
+        run: |
+          foreach ($f in 'backend.log','backend.err.log','media-server.log','media-server.err.log','tools/harness.log','tools/harness.err.log') {
+            if (Test-Path $f) { Write-Output "--- $f"; Get-Content $f -Tail 80 }
+          }
 
   integration:
     name: Integration (docker compose)
