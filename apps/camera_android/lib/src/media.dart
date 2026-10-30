@@ -56,6 +56,22 @@ RtpEncodingParameters cameraEncoding(int maxBitrate) => RtpEncodingParameters(
   scalabilityMode: 'L1T1',
 );
 
+/// The library starts a transport's peer connection without waiting for it (the handler's `run` is
+/// `void async`), and a produce before it exists fails on `_pc!` in that same swallowed way. The
+/// transport's stats go through the same peer connection, so they answer once it is there.
+Future<void> _untilReady(Transport transport) async {
+  final end = DateTime.now().add(const Duration(seconds: 5));
+  while (true) {
+    try {
+      await transport.getState();
+      return;
+    } on Object {
+      if (DateTime.now().isAfter(end)) rethrow;
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
+  }
+}
+
 /// flutter_webrtc for the camera and mediasoup's Device API for the transport (CLAUDE.md: never hand-built SDP).
 class MediasoupPublisher implements Publisher {
   MediasoupPublisher(this._log);
@@ -175,6 +191,7 @@ class MediasoupPublisher implements Publisher {
         break;
       }
     }
+    await _untilReady(transport);
     transport.produce(
       track: stream.getVideoTracks().first,
       stream: stream,
