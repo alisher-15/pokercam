@@ -277,10 +277,15 @@ jobs:
         run: |
           LICENSE_CHECK_INTERVAL_S=20 docker compose up -d --wait media-server
           make acceptance-dvr LICENSE_CHECK_INTERVAL_S=20
-      # The browser viewer at media-server's /viewer/ (the club's PC until the Windows client). Last: each run
-      # activates PCs, and the backend allows 5 activations a minute from one address.
+      # The browser viewer at media-server's /viewer/ (the club's PC until the Windows client), opened at the
+      # machine's address as a club's PC does: not a secure context there (no crypto.randomUUID and the like).
+      # Last: each run activates PCs, and the backend allows 5 activations a minute from one address.
       - name: "Acceptance: the browser viewer"
-        run: make acceptance-viewer
+        run: |
+          ip=$(hostname -I | awk '{print $1}')
+          sed -i '/^PUBLIC_MEDIA_URL=/d' .env && echo "PUBLIC_MEDIA_URL=ws://$ip:3000/ws" >> .env
+          docker compose up -d --wait backend
+          make acceptance-viewer VIEWER_HOST="$ip"
       - if: failure()
         run: docker compose logs
       - if: always()

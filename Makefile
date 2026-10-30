@@ -53,9 +53,10 @@ acceptance: ## Against `make dev`: a fake camera and MAX_VIEWERS_PER_TABLE fake 
 	key=$$(docker compose exec -T backend python -m app.cli create-client "Acceptance $$(date +%s)") && \
 	cd tools && node acceptance/stage3.ts --key "$$key" --viewers $${MAX_VIEWERS_PER_TABLE:-5}
 
-acceptance-viewer: ## Against `make dev`: the browser viewer at /viewer/ with a fake camera (stage 5 stand-in for the PC)
+acceptance-viewer: ## Against `make dev`: the browser viewer at /viewer/ with a fake camera; VIEWER_HOST=IP opens it off localhost
 	key=$$(docker compose exec -T backend python -m app.cli create-client "Viewer $$(date +%s)") && \
-	cd tools && node acceptance/viewer.ts --key "$$key"
+	cd tools && node acceptance/viewer.ts --key "$$key" \
+		$${VIEWER_HOST:+--backend http://$$VIEWER_HOST:8000 --page http://$$VIEWER_HOST:3000/viewer/}
 
 acceptance-dvr: ## Against `make dev`: DVR for DVR_MINUTES (11) min, FFmpeg killed, access, expired license (stage 4)
 	docker compose exec -T backend python -m app.cli create-admin "$$ADMIN_EMAIL" "$$ADMIN_PASSWORD" > /dev/null && \

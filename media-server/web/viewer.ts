@@ -185,6 +185,18 @@ function tOr(key: string, fallback: string): string {
   return key in TEXT[lang] ? t(key as TextKey) : fallback;
 }
 
+/**
+ * A random UUID v4. crypto.randomUUID exists only in secure contexts (https, localhost), and a club's PC opens
+ * this page at http://IP:3000; getRandomValues works everywhere.
+ */
+function uuid(): string {
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = ((b[6] ?? 0) & 0x0f) | 0x40;
+  b[8] = ((b[8] ?? 0) & 0x3f) | 0x80;
+  const hex = [...b].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 // ---- What the browser remembers -------------------------------------------------------------------------
 
 interface Saved {
@@ -203,7 +215,7 @@ function load(): Saved {
   } catch {
     // Private mode or a broken value: start over.
   }
-  return { api: `${location.protocol}//${location.hostname}:8000`, machineId: crypto.randomUUID() };
+  return { api: `${location.protocol}//${location.hostname}:8000`, machineId: uuid() };
 }
 
 let saved = load();
@@ -716,7 +728,7 @@ class Watch {
   }
 
   private send(type: string, payload: Record<string, unknown>): string {
-    const msg: Envelope = { type, id: crypto.randomUUID(), ts: Date.now(), table_id: this.table.id, payload };
+    const msg: Envelope = { type, id: uuid(), ts: Date.now(), table_id: this.table.id, payload };
     this.ws?.send(JSON.stringify(msg));
     return msg.id;
   }

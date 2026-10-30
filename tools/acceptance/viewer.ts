@@ -1,22 +1,25 @@
 // The browser viewer (media-server's /viewer/, the club's PC until the Windows client): signs in with the club's
 // activation key, plays the table's fake camera, changes a camera setting and shows the camera's answer, and
 // shows a pairing code with its QR. Any error on the page fails the run.
-// node acceptance/viewer.ts --key K [--backend http://localhost:8000] [--media ws://localhost:3000/ws] [--screenshot file.png]
+// node acceptance/viewer.ts --key K [--backend http://localhost:8000] [--media ws://localhost:3000/ws] [--page URL]
+//   [--screenshot file.png]
+// --page on the machine's address rather than localhost: like a club's PC, the page is then not a secure context
+// (no crypto.randomUUID and the like), and the backend must allow that origin (PUBLIC_MEDIA_URL).
 import { toolArgs } from "../bots/args.ts";
 import { club } from "../bots/backend.ts";
 import { BotFarm } from "../bots/farm.ts";
 
-const { backend, media, key, screenshot } = toolArgs({ screenshot: { type: "string", default: "" } }) as Record<
-  "backend" | "media" | "key" | "screenshot",
-  string
->;
+const { backend, media, key, page: pageUrl, screenshot } = toolArgs({
+  page: { type: "string", default: "" },
+  screenshot: { type: "string", default: "" },
+}) as Record<"backend" | "media" | "key" | "page" | "screenshot", string>;
 const results: { check: string; ok: boolean; detail: string }[] = [];
 const check = (name: string, ok: boolean, detail: string): void => {
   results.push({ check: name, ok, detail });
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}: ${detail}`);
 };
 
-const viewerUrl = `${media.replace(/^ws/, "http").replace(/\/ws$/, "")}/viewer/`;
+const viewerUrl = pageUrl || `${media.replace(/^ws/, "http").replace(/\/ws$/, "")}/viewer/`;
 const table = await club(backend, key);
 const farm = await BotFarm.start();
 const pageErrors: string[] = [];

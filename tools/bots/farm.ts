@@ -101,9 +101,14 @@ export class BotFarm {
     return new Bot(name, page);
   }
 
-  /** A plain tab of the same browser (fake camera, autoplay), for a real page such as media-server's /viewer/. */
+  /**
+   * A plain tab of the same browser (fake camera, autoplay), for a real page such as media-server's /viewer/. It
+   * says it is desktop Chrome: off a secure context there is no navigator.userAgentData, and mediasoup-client then
+   * reads the user agent, where headless Chromium's "HeadlessChrome/…" is not recognized.
+   */
   page(): Promise<Page> {
-    return this.browser.newPage({ locale: "en-US" });
+    const chrome = `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${this.browser.version()} Safari/537.36`;
+    return this.browser.newPage({ locale: "en-US", userAgent: chrome });
   }
 
   async close(): Promise<void> {
