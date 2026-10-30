@@ -8,6 +8,9 @@
 # updates the code to --ref and restarts; .env (secrets, passwords) is kept.
 set -euo pipefail
 
+# All of it is one function, run on the last line: piped into bash (curl | bash), the script is read while it
+# runs, and a command that reads stdin (docker compose run) would swallow the rest of it.
+main() {
 REF=main
 IP=""
 TIMEZONE_NAME=Asia/Almaty
@@ -139,3 +142,6 @@ Next:
      In the camera app: "Enter the code" -> server http://$IP:8000 and the code.
   3. Update later: run this script again (same --ref or a new one).
 SUMMARY
+}
+
+main "$@"

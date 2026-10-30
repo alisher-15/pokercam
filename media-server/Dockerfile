@@ -9,9 +9,10 @@ COPY src ./src
 RUN npm run build && npm prune --omit=dev
 
 FROM node:24-trixie-slim
-# SPEC 7.2: FFmpeg remuxes each table's RTP into the DVR's HLS segments.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg \
+# SPEC 7.2: FFmpeg remuxes each table's RTP into the DVR's HLS segments. Over IPv4: the build network has no
+# IPv6, and on some VPS the mirrors' IPv6 addresses come first and apt gives up on them.
+RUN apt-get -o Acquire::ForceIPv4=true update \
+    && apt-get -o Acquire::ForceIPv4=true install -y --no-install-recommends ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
 WORKDIR /srv

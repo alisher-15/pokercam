@@ -204,8 +204,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - name: First install
-        run: sudo bash deploy/install.sh --ref "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" --ip 127.0.0.1 --dir /opt/pokercam
+      - name: First install, piped into bash as in deploy/README.md
+        run: cat deploy/install.sh | sudo bash -s -- --ref "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" --ip 127.0.0.1 --dir /opt/pokercam
       - name: Running, admin can sign in, a pairing code comes out
         run: |
           curl -fsS http://localhost:8000/health
