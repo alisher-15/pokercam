@@ -217,6 +217,11 @@ jobs:
           cd /opt/pokercam
           sudo docker compose exec -T backend python -m app.cli seed
           sudo docker compose exec -T backend python -m app.cli pairing-code "Demo club" | grep -E '^code: [0-9]{6}$'
+          # Tokens are signed with the generated JWT key: a PC activates and gets one.
+          key=$(sudo docker compose exec -T backend python -m app.cli create-client "CI club")
+          refresh=$(curl -fsS -H 'Content-Type: application/json' -d "{\"activation_key\": \"$key\", \"machine_id\": \"ci\", \"name\": \"CI PC\"}" \
+            http://localhost:8000/api/v1/viewer/activate | python3 -c 'import json, sys; print(json.load(sys.stdin)["refresh_token"])')
+          curl -fsS -H 'Content-Type: application/json' -d "{\"refresh_token\": \"$refresh\"}" http://localhost:8000/api/v1/auth/token | grep -q '"access_token"'
       - name: Running it again updates and keeps the secrets
         run: |
           before=$(sudo grep '^JWT_PRIVATE_KEY=' /opt/pokercam/.env)

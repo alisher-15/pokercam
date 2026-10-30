@@ -91,8 +91,9 @@ if [ ! -f .env ]; then
   set_env ADMIN_EMAIL "$ADMIN_EMAIL_ARG"
   set_env ADMIN_PASSWORD "$ADMIN_PASSWORD_VALUE"
   docker compose build -q backend
-  docker compose run --rm --no-deps -T backend python -m app.cli gen-keys | while IFS='=' read -r key value; do
-    set_env "$key" "$value"
+  # Split at the first "=" only: base64 values end in "=", which IFS='=' read would cut off.
+  docker compose run --rm --no-deps -T backend python -m app.cli gen-keys | while IFS= read -r line; do
+    set_env "${line%%=*}" "${line#*=}"
   done
   # Production only now that the secrets are there: the backend refuses to start without them.
   set_env ENVIRONMENT production
