@@ -225,6 +225,10 @@ class _PairingScreenState extends State<PairingScreen> {
       };
 }
 
+/// Completes once the QR scanner has given the camera back: the check screen opens it for WebRTC only then,
+/// or CameraX, still starting, takes it away a moment later (on the emulator it retries its start for seconds).
+Future<void> scannerReleased = Future.value();
+
 /// mobile_scanner with its camera released for sure when the scanner goes away. Its own widget skips the
 /// stop while the camera is still starting (7.4.2: stop() needs isRunning), and the camera, opened a moment
 /// later, then stays with CameraX and takes the stream's camera away from WebRTC.
@@ -250,11 +254,12 @@ class _QrScannerState extends State<_QrScanner> {
 
   @override
   void dispose() {
-    unawaited(() async {
+    // Never fails: the check screen only waits on it.
+    scannerReleased = () async {
       await _started;
       await _controller.stop();
       await _controller.dispose();
-    }());
+    }().catchError((Object _) {});
     super.dispose();
   }
 

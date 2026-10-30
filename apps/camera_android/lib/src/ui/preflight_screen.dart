@@ -9,6 +9,7 @@ import '../app.dart';
 import '../platform/camera2.dart';
 import '../platform/device.dart';
 import '../store.dart';
+import 'pairing_screen.dart';
 import 'preview.dart';
 
 class PreflightState {
@@ -69,6 +70,10 @@ class PreflightCubit extends Cubit<PreflightState> {
     bool? h264;
     if (permissions.camera) {
       try {
+        await scannerReleased.timeout(
+          const Duration(seconds: 15),
+          onTimeout: () {},
+        );
         final trackId = await services.publisher.openCamera();
         camera = await services.camera.capabilities(trackId);
         h264 =
