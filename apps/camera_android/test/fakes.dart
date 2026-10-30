@@ -151,6 +151,8 @@ ApiClient backend(String mediaUrl, {int status = 200}) => ApiClient(
 );
 
 class FakePublisher implements Publisher {
+  int opened = 0;
+  int closed = 0;
   int published = 0;
   int unpublished = 0;
   final bitrates = <int>[];
@@ -165,7 +167,7 @@ class FakePublisher implements Publisher {
   void fail() => _failures.add(null);
 
   @override
-  Future<String> openCamera() async => 'track-1';
+  Future<String> openCamera() async => 'track-${++opened}';
 
   @override
   Future<void> publish(ControlSocket socket, {required int maxBitrate}) async {
@@ -189,7 +191,7 @@ class FakePublisher implements Publisher {
   Future<void> unpublish() async => unpublished++;
 
   @override
-  Future<void> closeCamera() async {}
+  Future<void> closeCamera() async => closed++;
 }
 
 ParamCapability _manual(double min, double max) => ParamCapability(
@@ -209,13 +211,26 @@ class FakeCamera implements CameraControlApi {
   final sets = <(CameraParam, CameraControl)>[];
   final applied = <Map<String, CameraControl>>[];
 
+  /// Tracks whose capture session is gone (the system gave the camera to someone else).
+  final lostTracks = <String>{};
+
   @override
   Future<Map<String, dynamic>> deviceInfo() async => {
     'h264_hardware_encoder': true,
   };
 
   @override
-  Future<CameraInfo> capabilities(String trackId) async => CameraInfo(
+  Future<CameraInfo> capabilities(String trackId) async {
+    if (lostTracks.contains(trackId)) {
+      throw const CameraControlError(
+        'camera_unavailable',
+        'currentSession is null',
+      );
+    }
+    return _info;
+  }
+
+  CameraInfo get _info => CameraInfo(
     params: CameraParamCapabilities(
       focus: _manual(0, 10),
       iso: _manual(100, 3200),

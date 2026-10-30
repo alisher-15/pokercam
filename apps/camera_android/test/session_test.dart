@@ -135,6 +135,23 @@ void main() {
     await run;
   });
 
+  test('the camera taken away (no capture session): reopened, then published again', () async {
+    camera.lostTracks.add('track-1');
+    final s = session();
+    final run = s.run();
+    await server.next('camera.capabilities');
+    expect(publisher.closed, 1);
+    expect(publisher.opened, 2);
+    expect(server.joins, 2);
+    await until(() => s.state.phase == SessionPhase.live);
+    expect(
+      logs.any((l) => l.contains('"message":"reopening the camera"')),
+      isTrue,
+    );
+    await s.stop();
+    await run;
+  });
+
   test('replaced by another camera (close 4001): back to pairing', () async {
     final s = session();
     final run = s.run();

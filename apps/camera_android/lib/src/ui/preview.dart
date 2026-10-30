@@ -26,6 +26,15 @@ class _PreviewState extends State<Preview> {
   }
 
   @override
+  void didUpdateWidget(Preview old) {
+    super.didUpdateWidget(old);
+    // The session reopens the camera when the system took it away: show the new stream.
+    if (_ready && !identical(old.stream, widget.stream)) {
+      _renderer.srcObject = widget.stream;
+    }
+  }
+
+  @override
   void dispose() {
     _renderer.srcObject = null;
     _renderer.dispose();

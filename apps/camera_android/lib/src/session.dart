@@ -102,6 +102,9 @@ class BroadcastSession {
   SessionState _state = const SessionState();
   ControlSocket? _socket;
   String? _trackId;
+
+  /// The capture session is gone (another app or the QR scanner took the camera): reopen before publishing.
+  bool _cameraLost = false;
   JsonLog? _sessionLog;
   bool _stopped = false;
   bool _publishing = false;
@@ -156,6 +159,12 @@ class BroadcastSession {
     StreamSubscription<Map<String, dynamic>>? messages;
     StreamSubscription<void>? failures;
     try {
+      if (_cameraLost) {
+        log.warn('reopening the camera');
+        await publisher.closeCamera();
+        _trackId = await publisher.openCamera();
+        _cameraLost = false;
+      }
       final token = await tokens.get();
       final opened = await _connect(token.mediaUrl, pairing.tableId);
       socket = opened;
@@ -213,6 +222,9 @@ class BroadcastSession {
           tokens.invalidate();
       }
       log.warn('signaling refused', {'code': e.code, 'message': e.message});
+    } on CameraControlError catch (e) {
+      if (e.code == 'camera_unavailable') _cameraLost = true;
+      log.warn('camera error', {'error': '$e'});
     } on Object catch (e) {
       log.warn('connection failed', {'error': '$e'});
     } finally {

@@ -212,14 +212,7 @@ class _PairingScreenState extends State<PairingScreen> {
     AppLocalizations l10n,
   ) =>
       context.read<Services>().scanner?.call(onCode) ??
-      MobileScanner(
-        onDetect: (capture) {
-          final text = capture.barcodes.firstOrNull?.rawValue;
-          if (text != null) onCode(text);
-        },
-        errorBuilder: (context, error) =>
-            Center(child: Text(l10n.pairingCameraDenied)),
-      );
+      _QrScanner(onCode: onCode, deniedText: l10n.pairingCameraDenied);
 
   static String _errorText(AppLocalizations l10n, PairingState state) =>
       switch (state.error!) {
@@ -230,6 +223,50 @@ class _PairingScreenState extends State<PairingScreen> {
         PairingError.notOurs => l10n.pairingQrNotOurs,
         PairingError.other => l10n.pairingErrorOther(state.errorCode),
       };
+}
+
+/// mobile_scanner with its camera released for sure when the scanner goes away. Its own widget skips the
+/// stop while the camera is still starting (7.4.2: stop() needs isRunning), and the camera, opened a moment
+/// later, then stays with CameraX and takes the stream's camera away from WebRTC.
+class _QrScanner extends StatefulWidget {
+  const _QrScanner({required this.onCode, required this.deniedText});
+
+  final void Function(String text) onCode;
+  final String deniedText;
+
+  @override
+  State<_QrScanner> createState() => _QrScannerState();
+}
+
+class _QrScannerState extends State<_QrScanner> {
+  final _controller = MobileScannerController(autoStart: false);
+  late final Future<void> _started;
+
+  @override
+  void initState() {
+    super.initState();
+    _started = _controller.start().catchError((Object _) {});
+  }
+
+  @override
+  void dispose() {
+    unawaited(() async {
+      await _started;
+      await _controller.stop();
+      await _controller.dispose();
+    }());
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => MobileScanner(
+    controller: _controller,
+    onDetect: (capture) {
+      final text = capture.barcodes.firstOrNull?.rawValue;
+      if (text != null) widget.onCode(text);
+    },
+    errorBuilder: (context, error) => Center(child: Text(widget.deniedText)),
+  );
 }
 
 class _Banner extends StatelessWidget {
