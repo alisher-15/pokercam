@@ -69,12 +69,14 @@ Services services({
   String? pairError,
   String? licenseError,
   FakeDevice? device,
+  FakeCamera? camera,
+  FakePublisher? publisher,
 }) => Services(
   pairings: pairings ?? MemoryPairings(),
   settings: MemorySettings(),
-  camera: FakeCamera(),
+  camera: camera ?? FakeCamera(),
   device: device ?? FakeDevice(),
-  publisher: FakePublisher(),
+  publisher: publisher ?? FakePublisher(),
   log: JsonLog('camera', sink: (_) {}),
   api: (url) =>
       fakeBackend(url, pairError: pairError, licenseError: licenseError),
@@ -178,6 +180,35 @@ void main() {
         find.byKey(const Key('preflight-start')),
       );
       expect(start.onPressed, isNotNull);
+    },
+  );
+
+  testWidgets(
+    'a camera without a capture session (taken while in the background) is reopened by the check',
+    (tester) async {
+      final camera = FakeCamera()..lostTracks.add('track-1');
+      final publisher = FakePublisher();
+      await pump(
+        tester,
+        services(
+          pairings: MemoryPairings(pairing),
+          camera: camera,
+          publisher: publisher,
+        ),
+      );
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+      expect((publisher.closed, publisher.opened), (1, 2));
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('preflight-start')),
+        100,
+      );
+      expect(
+        tester
+            .widget<ButtonStyleButton>(find.byKey(const Key('preflight-start')))
+            .onPressed,
+        isNotNull,
+      );
     },
   );
 

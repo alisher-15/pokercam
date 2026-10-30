@@ -53,13 +53,51 @@ class PreflightState {
 /// Screen 2 of SPEC 6.1: opens the camera (the same stream goes on air) and checks what the table needs.
 class PreflightCubit extends Cubit<PreflightState> {
   PreflightCubit(this.services, this.app, this.pairing)
-    : super(const PreflightState());
+    : super(const PreflightState()) {
+    // Back from another app: Android may have taken the camera meanwhile (no foreground service keeps it on
+    // this screen), and permissions or the battery setting may have changed there.
+    _lifecycle = AppLifecycleListener(
+      onResume: () => unawaited(check(ask: false)),
+    );
+  }
 
   final Services services;
   final AppCubit app;
   final Pairing pairing;
+  late final AppLifecycleListener _lifecycle;
+  Future<void>? _checking;
 
-  Future<void> check({bool ask = true}) async {
+  /// One check at a time: a permission dialog resumes the app while the check that opened it still runs.
+  Future<void> check({bool ask = true}) =>
+      _checking ??= _check(ask: ask).whenComplete(() => _checking = null);
+
+  @override
+  Future<void> close() {
+    _lifecycle.dispose();
+    return super.close();
+  }
+
+  /// The camera's capabilities, waiting for its capture session (a camera just opened needs a moment) and
+  /// reopening it once when the session is gone (Android took the camera while the app was in the background).
+  Future<CameraInfo> _cameraInfo() async {
+    var trackId = await services.publisher.openCamera();
+    for (var reopened = false; ; reopened = true) {
+      for (var attempt = 0; attempt < 10; attempt++) {
+        try {
+          return await services.camera.capabilities(trackId);
+        } on CameraControlError catch (e) {
+          if (e.code != 'camera_unavailable') rethrow;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      }
+      if (reopened) throw const CameraControlError('camera_unavailable');
+      services.log.warn('no capture session: reopening the camera');
+      await services.publisher.closeCamera();
+      trackId = await services.publisher.openCamera();
+    }
+  }
+
+  Future<void> _check({required bool ask}) async {
     emit(const PreflightState());
     var permissions = await services.device.permissions();
     if (ask && (!permissions.camera || !permissions.notifications)) {
@@ -74,8 +112,7 @@ class PreflightCubit extends Cubit<PreflightState> {
           const Duration(seconds: 15),
           onTimeout: () {},
         );
-        final trackId = await services.publisher.openCamera();
-        camera = await services.camera.capabilities(trackId);
+        camera = await _cameraInfo();
         h264 =
             (await services.camera.deviceInfo())['h264_hardware_encoder'] ==
             true;
