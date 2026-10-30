@@ -268,9 +268,6 @@ jobs:
       # Stage 3 (SPEC 12): a fake camera, as many bot viewers as the table allows, one more is refused.
       - name: "Acceptance: the pilot, 1 viewer (.env.example)"
         run: make acceptance
-      # The browser viewer at media-server's /viewer/ (the club's PC until the Windows client).
-      - name: "Acceptance: the browser viewer"
-        run: make acceptance-viewer
       - name: "Acceptance: 5 viewers"
         run: |
           MAX_VIEWERS_PER_TABLE=5 docker compose up -d --wait media-server
@@ -280,6 +277,10 @@ jobs:
         run: |
           LICENSE_CHECK_INTERVAL_S=20 docker compose up -d --wait media-server
           make acceptance-dvr LICENSE_CHECK_INTERVAL_S=20
+      # The browser viewer at media-server's /viewer/ (the club's PC until the Windows client). Last: each run
+      # activates PCs, and the backend allows 5 activations a minute from one address.
+      - name: "Acceptance: the browser viewer"
+        run: make acceptance-viewer
       - if: failure()
         run: docker compose logs
       - if: always()
