@@ -105,6 +105,13 @@ class BroadcastSession {
 
   /// The capture session is gone (another app or the QR scanner took the camera): reopen before publishing.
   bool _cameraLost = false;
+
+  /// Telemetry periods in a row with nothing sent while publishing; at [stalledTicks] the camera is reopened.
+  int _stalled = 0;
+  static const stalledTicks = 3;
+
+  /// Ends the current connection early (the camera stalled): completed by the telemetry tick.
+  Completer<void>? _lost;
   JsonLog? _sessionLog;
   bool _stopped = false;
   bool _publishing = false;
@@ -179,6 +186,7 @@ class BroadcastSession {
       _sessionLog = _log.withContext({'session_id': joined['session_id']});
       log.info('joined', {'media_url': token.mediaUrl});
       final lost = Completer<void>();
+      _lost = lost;
       failures = publisher.failures.listen((_) {
         if (!lost.isCompleted) lost.complete();
       });
@@ -189,7 +197,9 @@ class BroadcastSession {
         log.warn('replaced by another camera');
         return SessionPhase.unpaired;
       }
-      log.warn('connection lost', {'close_code': socket.closeCode});
+      if (!_cameraLost) {
+        log.warn('connection lost', {'close_code': socket.closeCode});
+      }
     } on ApiException catch (e) {
       if (e.unauthorized) {
         log.warn('the backend no longer knows this phone', {'code': e.code});
@@ -392,6 +402,7 @@ class BroadcastSession {
     try {
       final snapshot = await device.snapshot();
       final stats = _publishing ? await publisher.stats() : null;
+      _watchCamera(stats);
       final heat = thermal.update(snapshot.thermal, snapshot.tempC, _now());
       if (heat != null) {
         log.warn('heat level ${thermal.level}', {
@@ -445,6 +456,25 @@ class BroadcastSession {
     } on Object catch (e) {
       log.warn('telemetry failed', {'error': '$e'});
     }
+  }
+
+  /// A camera that sends nothing for [stalledTicks] periods while published was taken away or hung without an
+  /// error (the capture session can stop silently): reconnect and reopen it.
+  void _watchCamera(PublishStats? stats) {
+    if (stats == null) {
+      _stalled = 0;
+      return;
+    }
+    _stalled = stats.fps == 0 && stats.bitrateKbps == 0 ? _stalled + 1 : 0;
+    if (_stalled < stalledTicks) return;
+    _stalled = 0;
+    log.warn('camera stalled: nothing sent', {
+      'seconds': telemetryEvery.inSeconds * stalledTicks,
+      'dropped_frames': stats.droppedFrames,
+    });
+    _cameraLost = true;
+    final lost = _lost;
+    if (lost != null && !lost.isCompleted) lost.complete();
   }
 
   Future<void> _sleep(Duration pause) async {

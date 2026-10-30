@@ -1,4 +1,5 @@
 import 'package:camera_android/src/platform/device.dart';
+import 'package:camera_android/src/media.dart';
 import 'package:camera_android/src/session.dart';
 import 'package:camera_android/src/tokens.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -148,6 +149,31 @@ void main() {
       logs.any((l) => l.contains('"message":"reopening the camera"')),
       isTrue,
     );
+    await s.stop();
+    await run;
+  });
+
+  test('a camera that sends nothing while published is reopened (SPEC 6.4: the stream recovers on its own)', () async {
+    publisher.statsValue = const PublishStats(
+      bitrateKbps: 0,
+      fps: 0,
+      droppedFrames: 3,
+    );
+    final s = session();
+    final run = s.run();
+    await server.next('camera.state');
+    await until(() => publisher.opened == 2 && server.joins == 2);
+    expect(publisher.closed, 1);
+    expect(
+      logs.any((l) => l.contains('"message":"camera stalled: nothing sent"')),
+      isTrue,
+    );
+    publisher.statsValue = const PublishStats(
+      bitrateKbps: 3900,
+      fps: 30,
+      droppedFrames: 0,
+    );
+    await until(() => s.state.phase == SessionPhase.live);
     await s.stop();
     await run;
   });

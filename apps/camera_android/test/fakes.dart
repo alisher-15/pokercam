@@ -179,13 +179,15 @@ class FakePublisher implements Publisher {
   Future<void> setMaxBitrate(int bitsPerSecond) async =>
       bitrates.add(bitsPerSecond);
 
-  @override
-  Future<PublishStats?> stats() async => const PublishStats(
+  PublishStats statsValue = const PublishStats(
     bitrateKbps: 3900,
     fps: 30,
     droppedFrames: 2,
     rttMs: 12,
   );
+
+  @override
+  Future<PublishStats?> stats() async => statsValue;
 
   @override
   Future<void> unpublish() async => unpublished++;

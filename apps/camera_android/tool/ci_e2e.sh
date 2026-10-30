@@ -33,7 +33,10 @@ harness_status=$?
 kill "$granter" 2>/dev/null
 adb logcat -d > build/logcat.txt 2>/dev/null
 echo "--- the app's log and errors (logcat) ---"
-grep -E 'I flutter|E flutter|Camera2Control|AndroidRuntime|FATAL' build/logcat.txt | tail -150
+grep -E 'flutter|Camera2Control|Camera2Session|CameraCapturer|Camera2Capturer|SurfaceTextureHelper|Camera2CameraImpl|CameraX|MobileScanner|AndroidRuntime|FATAL' \
+  build/logcat.txt | grep -v '"message"' | tail -200
+echo "--- who opened and lost the camera (camera service events) ---"
+adb shell dumpsys media.camera 2>/dev/null | grep -E 'CONNECT|DISCONNECT|EVICT|DIED' | tail -40
 echo "--- the PC harness ---"
 cat build/harness.log
 echo "app test: $app_status, harness: $harness_status"
