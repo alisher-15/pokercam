@@ -28,7 +28,9 @@ def create_app() -> FastAPI:
         session_cookie="admin_session",
         max_age=12 * 3600,
         same_site="strict",
-        https_only=settings.environment == "production",
+        # Secure only when the panel is reached over HTTPS: a browser drops a Secure cookie that came over plain
+        # HTTP, and nobody could sign in to a server still on http://IP (the pilot until stage 9's Caddy).
+        https_only=settings.environment == "production" and settings.public_api_url.startswith("https://"),
     )
     return app
 

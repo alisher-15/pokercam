@@ -28,6 +28,27 @@ def admin(client: TestClient, db: Session) -> TestClient:
     return client
 
 
+@pytest.mark.parametrize(("public_url", "secure"), [("http://203.0.113.5:8000", False), ("https://cam.test", True)])
+def test_production_session_cookie_is_secure_only_over_https(
+    client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch, public_url: str, secure: bool
+) -> None:
+    """On http://IP a Secure cookie never comes back from the browser: the admin could not stay signed in."""
+    from app.config import get_settings
+    from app.main import create_app
+
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("PUBLIC_API_URL", public_url)
+    get_settings.cache_clear()
+    create_admin(db, EMAIL, PASSWORD)
+    db.commit()
+    with TestClient(create_app(), base_url=public_url) as production:
+        response = production.post("/admin/login", data={"email": EMAIL, "password": PASSWORD}, follow_redirects=False)
+        assert response.status_code == 303
+        assert ("secure" in response.headers["set-cookie"].lower()) is secure
+        assert production.get("/admin/clients", follow_redirects=False).status_code == 200
+    get_settings.cache_clear()
+
+
 def audit_actions(db: Session) -> list[str]:
     db.expire_all()
     return db.scalars(select(AuditLog.action).order_by(AuditLog.id)).all()
