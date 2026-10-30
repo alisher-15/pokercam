@@ -949,6 +949,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'no data from the phone yet'**
   String get deviceNoData;
+
+  /// No description provided for @cameraNoAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'no answer from the camera'**
+  String get cameraNoAnswer;
+
+  /// No description provided for @cameraApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'applied in {ms} ms'**
+  String cameraApplied(int ms);
 }
 
 class _AppLocalizationsDelegate

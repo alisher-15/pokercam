@@ -141,5 +141,7 @@
   "deviceConnection": "Соединение",
   "connectionLive": "в эфире",
   "connectionOffline": "камера не в сети",
-  "deviceNoData": "данных с телефона пока нет"
+  "deviceNoData": "данных с телефона пока нет",
+  "cameraNoAnswer": "камера не ответила",
+  "cameraApplied": "применено за {ms} мс"
 }

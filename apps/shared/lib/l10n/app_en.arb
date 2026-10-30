@@ -523,5 +523,14 @@
   "deviceConnection": "Connection",
   "connectionLive": "on air",
   "connectionOffline": "camera offline",
-  "deviceNoData": "no data from the phone yet"
+  "deviceNoData": "no data from the phone yet",
+  "cameraNoAnswer": "no answer from the camera",
+  "cameraApplied": "applied in {ms} ms",
+  "@cameraApplied": {
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  }
 }

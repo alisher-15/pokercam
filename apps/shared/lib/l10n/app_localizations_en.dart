@@ -501,4 +501,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deviceNoData => 'no data from the phone yet';
+
+  @override
+  String get cameraNoAnswer => 'no answer from the camera';
+
+  @override
+  String cameraApplied(int ms) {
+    return 'applied in $ms ms';
+  }
 }

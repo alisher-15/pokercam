@@ -500,4 +500,12 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get deviceNoData => 'данных с телефона пока нет';
+
+  @override
+  String get cameraNoAnswer => 'камера не ответила';
+
+  @override
+  String cameraApplied(int ms) {
+    return 'применено за $ms мс';
+  }
 }

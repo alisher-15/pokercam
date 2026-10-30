@@ -50,12 +50,13 @@ class ControlSocket {
   final _pending = <String, Completer<Map<String, dynamic>>>{};
   final _done = Completer<void>();
 
-  /// Opens the socket. A dead connection (network gone) is noticed by pings within about [ping] × 2.
+  /// Opens the socket. A dead connection (network gone) is noticed by pings within about [ping] × 2; null
+  /// sends none (widget tests, whose fake clock would keep dart:io's ping timer pending).
   static Future<ControlSocket> connect(
     String url,
     String tableId, {
     Duration timeout = const Duration(seconds: 10),
-    Duration ping = const Duration(seconds: 5),
+    Duration? ping = const Duration(seconds: 5),
   }) async {
     final ws = await WebSocket.connect(url).timeout(timeout);
     ws.pingInterval = ping;

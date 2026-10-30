@@ -11,9 +11,23 @@ dependencies:
     sdk: flutter
   shared:
     path: ../shared
+  # BLoC / Cubit state (SPEC 4).
+  flutter_bloc: ^9.1.1
+  # WebRTC for live video (SPEC 8.2); pinned like the camera app's.
+  flutter_webrtc: 1.6.3
+  # mediasoup's Device API over flutter_webrtc (CLAUDE.md: never hand-built SDP); same as the camera app.
+  mediasfu_mediasoup_client: ^0.1.4
+  # The PC's refresh token in the Windows Credential Manager.
+  flutter_secure_storage: ^11.2.0
+  # The pairing QR code on screen (SPEC 8.1), BSD-3.
+  qr_flutter: ^4.1.0
+  http: ^1.6.0
+  intl: any
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
   flutter_lints: ^6.0.0
 
