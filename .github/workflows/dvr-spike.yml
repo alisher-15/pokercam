@@ -1,0 +1,36 @@
+# Stage 7 spike, temporary: media_kit's player seeking in a growing DVR recording on a real Windows machine
+# (apps/viewer_windows/integration_test/dvr_spike_test.dart). Goes away once the stage's e2e covers the DVR.
+name: DVR spike (stage 7)
+
+on:
+  push:
+    branches: ["stage-7/**"]
+    paths:
+      - "apps/viewer_windows/**"
+      - ".github/workflows/dvr-spike.yml"
+
+env:
+  FLUTTER_VERSION: "3.47.8"
+
+jobs:
+  spike:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      # The fixture is encoded on the runner: FFmpeg with libx264 from Chocolatey, as for the DVR on Windows later.
+      - name: FFmpeg
+        run: |
+          if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { choco install ffmpeg -y --no-progress }
+          ffmpeg -hide_banner -version | Select-Object -First 1
+      - name: Seeking with media_kit
+        working-directory: apps/viewer_windows
+        run: flutter test integration_test/dvr_spike_test.dart -d windows --reporter expanded

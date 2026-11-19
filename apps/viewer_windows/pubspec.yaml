@@ -21,6 +21,10 @@ dependencies:
   flutter_secure_storage: ^11.2.0
   # The pairing QR code on screen (SPEC 8.1), BSD-3.
   qr_flutter: ^4.1.0
+  # The DVR player (SPEC 8.2: media_kit over libmpv), MIT; the libs package ships libmpv for Windows.
+  media_kit: ^1.2.6
+  media_kit_video: ^2.0.1
+  media_kit_libs_windows_video: ^1.0.11
   http: ^1.6.0
   intl: any
 
