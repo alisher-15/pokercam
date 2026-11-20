@@ -5,6 +5,7 @@
 //   flutter test integration_test/dvr_player_test.dart -d windows   (needs ffmpeg with libx264 on PATH)
 // ignore_for_file: avoid_print
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -40,9 +41,26 @@ void main() {
         (await tester.runAsync(f)) as T;
 
     final dir = Directory('${Directory.systemTemp.path}/pokercam-dvr-fixture');
+    final watch = Stopwatch()..start();
     final fx = await io(() => HlsFixture.start(dir));
+    print('dvr: fixture ready in ${watch.elapsedMilliseconds} ms at ${fx.url}');
     final log = JsonLog('dvr-test', sink: (line) => print('log $line'));
-    final player = await io(() => MediaKitDvrPlayer.create(log));
+    // The player's video texture comes from the platform side, which needs frames drawn meanwhile.
+    MediaKitDvrPlayer? made;
+    Object? failed;
+    unawaited(
+      MediaKitDvrPlayer.create(log)
+          .then<void>((p) => made = p, onError: (Object e) => failed = e),
+    );
+    while (made == null &&
+        failed == null &&
+        watch.elapsed < const Duration(minutes: 2)) {
+      await tester.pump(const Duration(milliseconds: 50));
+      await io(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    }
+    final player = made;
+    if (player == null) throw StateError('no player: ${failed ?? 'timed out'}');
+    print('dvr: player ready in ${watch.elapsedMilliseconds} ms');
     final dvr = DvrController(
       player: player,
       source: DvrSource(
@@ -206,5 +224,5 @@ void main() {
     }
     print('dvr-report: ${jsonEncode(checks)}');
     expect(checks.where((c) => c['ok'] != true), isEmpty);
-  }, timeout: const Timeout(Duration(minutes: 10)));
+  }, timeout: const Timeout(Duration(minutes: 6)));
 }

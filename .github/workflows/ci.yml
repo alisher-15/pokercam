@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      soak_minutes:
+        description: "Windows app: minutes of rewinding with the memory reported (SPEC 8.6); 0 skips it"
+        default: "0"
 
 concurrency:
   # Per event: a push does not cancel a manually started full run of the same branch.
@@ -260,11 +264,12 @@ jobs:
             --title "PokerCam — программа для ПК (Windows)" `
             --notes "Программа для компьютера клуба из ветки $env:GITHUB_REF_NAME, коммит $env:GITHUB_SHA. Распакуйте pokercam-viewer-windows.zip в любую папку и запустите viewer_windows.exe."
 
-  # Stage 6 (SPEC 12: the camera is controlled from the PC): the real Windows app against backend and
-  # media-server running on the same Windows machine (PostgreSQL is on the runner; no DVR, that is stage 7),
-  # with a fake camera in Chromium; tools/acceptance/stage6.ts + integration_test/e2e_test.dart.
+  # Stages 6 and 7 (SPEC 12: the camera is controlled from the PC; the DVR on Windows): the real Windows app
+  # against backend and media-server running on the same Windows machine (PostgreSQL is on the runner, FFmpeg
+  # from Chocolatey records the DVR), with a fake camera in Chromium; tools/acceptance/stage6.ts +
+  # integration_test/e2e_test.dart. First the DVR's precision on numbered frames (dvr_player_test.dart).
   windows-e2e:
-    name: Windows app against the servers (stage 6)
+    name: Windows app against the servers (stages 6-7)
     if: github.event_name != 'push' || github.ref == 'refs/heads/main'
     needs: [backend, media-server, apps]
     runs-on: windows-latest
@@ -279,9 +284,11 @@ jobs:
       MEDIA_SERVER_URL: http://127.0.0.1:3000
       BACKEND_URL: http://127.0.0.1:8000
       RTC_ANNOUNCED_ADDRESS: 127.0.0.1
-      DVR_ENABLED: "false"
+      DVR_ENABLED: "true"
+      DVR_DIR: ${{ github.workspace }}\dvr
       MAX_VIEWERS_PER_TABLE: "2"
       MEDIASOUP_WORKERS: "1"
+      SOAK_MINUTES: ${{ inputs.soak_minutes || '0' }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -303,12 +310,16 @@ jobs:
           & "$env:PGBIN\psql" -U postgres -c "CREATE USER pokercam WITH PASSWORD 'pokercam'"
           & "$env:PGBIN\psql" -U postgres -c "CREATE DATABASE pokercam OWNER pokercam"
       # Installs only: on a Windows runner a process started in one step is gone when the step ends.
-      - name: Install backend, media-server and the fake camera
+      - name: Install backend, media-server, the fake camera and FFmpeg
         run: |
+          if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { choco install ffmpeg -y --no-progress }
           pip install -r backend/requirements.txt
           Push-Location media-server; npm ci --no-audit --no-fund; npm run build; Pop-Location
           Push-Location tools; npm ci --no-audit --no-fund; npx playwright install chromium; Pop-Location
-      - name: "Acceptance: the Windows app controls the camera"
+      - name: "DVR: every key on the expected frame (SPEC 8.6)"
+        working-directory: apps/viewer_windows
+        run: flutter test integration_test/dvr_player_test.dart -d windows --reporter expanded
+      - name: "Acceptance: the Windows app controls the camera and rewinds the DVR"
         run: |
           function Wait-Url($url, $tries = 60) {
             for ($i = 0; $i -lt $tries; $i++) { try { Invoke-RestMethod $url | Out-Null; return } catch { Start-Sleep 2 } }
@@ -332,14 +343,16 @@ jobs:
             Start-Process node -ArgumentList 'dist/index.js' -WorkingDirectory media-server `
               -RedirectStandardOutput "$logs/media-server.log" -RedirectStandardError "$logs/media-server.err.log"
             Wait-Url http://127.0.0.1:3000/health
-            $harness = Start-Process node -ArgumentList 'acceptance/stage6.ts','--key',$key,'--port','8766' `
+            $wait = [string](900 + 60 * [int]$env:SOAK_MINUTES)
+            $harness = Start-Process node -ArgumentList 'acceptance/stage6.ts','--key',$key,'--port','8766','--wait',$wait `
               -WorkingDirectory tools -RedirectStandardOutput "$logs/harness.log" -RedirectStandardError "$logs/harness.err.log" -PassThru
             Wait-Url http://127.0.0.1:8766/setup 90
             Push-Location apps/viewer_windows
-            flutter test integration_test/e2e_test.dart -d windows --dart-define=E2E_HARNESS=http://127.0.0.1:8766 --reporter expanded
+            flutter test integration_test/e2e_test.dart -d windows --dart-define=E2E_HARNESS=http://127.0.0.1:8766 `
+              --dart-define=SOAK_MINUTES=$env:SOAK_MINUTES --timeout=none --reporter expanded
             $app = $LASTEXITCODE
             Pop-Location
-            $harness.WaitForExit(600000) | Out-Null
+            $harness.WaitForExit(1000 * [int]$wait) | Out-Null
             Get-Content "$logs/harness.log"
             Write-Output "app test: $app, harness: $($harness.ExitCode)"
             $failed = $app -ne 0 -or $harness.ExitCode -ne 0

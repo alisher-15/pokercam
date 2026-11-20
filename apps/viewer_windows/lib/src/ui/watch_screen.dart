@@ -330,86 +330,91 @@ class _VideoAreaState extends State<_VideoArea> {
             : l10n.watchWaiting,
       WatchPhase.live => null,
     };
-    return ColoredBox(
-      color: Colors.black,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (stream != null && !blocked)
-            RepaintBoundary(key: _liveKey, child: services.video(stream)),
-          // SPEC 8.5: the DVR stays available while the camera is offline, until the buffer runs out.
-          if (behind) ...[
-            Positioned.fill(
-              child: Opacity(
-                key: const Key('dvr-video'),
-                opacity: view.showing ? 1 : 0,
-                child: dvr.player.view(),
-              ),
-            ),
-            if (!view.showing && _frozen != null)
+    return RepaintBoundary(
+      key: const Key('video-area'),
+      child: ColoredBox(
+        color: Colors.black,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (stream != null && !blocked)
+              RepaintBoundary(key: _liveKey, child: services.video(stream)),
+            // SPEC 8.5: the DVR stays available while the camera is offline, until the buffer runs out.
+            if (behind) ...[
               Positioned.fill(
-                child: RawImage(
-                  key: const Key('dvr-frozen'),
-                  image: _frozen,
-                  fit: BoxFit.fill,
+                child: Opacity(
+                  key: const Key('dvr-video'),
+                  opacity: view.showing ? 1 : 0,
+                  child: dvr.player.view(),
                 ),
               ),
-          ],
-          if (message != null && !behind)
-            Center(
+              if (!view.showing && _frozen != null)
+                Positioned.fill(
+                  child: RawImage(
+                    key: const Key('dvr-frozen'),
+                    image: _frozen,
+                    fit: BoxFit.fill,
+                  ),
+                ),
+            ],
+            if (message != null && !behind)
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (state.phase == WatchPhase.connecting ||
+                        state.phase == WatchPhase.reconnecting)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: CircularProgressIndicator(),
+                      ),
+                    Text(
+                      message,
+                      key: const Key('watch-message'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white, fontSize: 18),
+                    ),
+                  ],
+                ),
+              ),
+            if (state.phase == WatchPhase.live || behind)
+              Positioned(
+                left: 12,
+                top: 12,
+                child: DvrIndicator(view: behind ? view : const DvrView()),
+              ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (state.phase == WatchPhase.connecting ||
-                      state.phase == WatchPhase.reconnecting)
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 12),
-                      child: CircularProgressIndicator(),
+                  if (grace != null && !blocked)
+                    Container(
+                      key: const Key('watch-grace'),
+                      color: Colors.amber.shade700,
+                      padding: const EdgeInsets.all(10),
+                      child: Text(
+                        l10n.bannerLicenseGrace(
+                          DateFormat.yMd(l10n.localeName)
+                              .add_Hm()
+                              .format(grace),
+                        ),
+                        style: const TextStyle(color: Colors.black),
+                      ),
                     ),
-                  Text(
-                    message,
-                    key: const Key('watch-message'),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
-                  ),
+                  if (state.dvr != null && !blocked)
+                    DvrBar(
+                      view: behind ? view : DvrView(timeline: view.timeline),
+                      onLive: () => unawaited(dvr?.goLive()),
+                    ),
                 ],
               ),
             ),
-          if (state.phase == WatchPhase.live || behind)
-            Positioned(
-              left: 12,
-              top: 12,
-              child: DvrIndicator(view: behind ? view : const DvrView()),
-            ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (grace != null && !blocked)
-                  Container(
-                    key: const Key('watch-grace'),
-                    color: Colors.amber.shade700,
-                    padding: const EdgeInsets.all(10),
-                    child: Text(
-                      l10n.bannerLicenseGrace(
-                        DateFormat.yMd(l10n.localeName).add_Hm().format(grace),
-                      ),
-                      style: const TextStyle(color: Colors.black),
-                    ),
-                  ),
-                if (state.dvr != null && !blocked)
-                  DvrBar(
-                    view: behind ? view : DvrView(timeline: view.timeline),
-                    onLive: () => unawaited(dvr?.goLive()),
-                  ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -106,6 +106,9 @@ class DvrController {
   DvrView get view => _view;
   Stream<DvrView> get views => _views.stream;
 
+  /// Completes once the keys pressed so far have been carried out.
+  Future<void> get idle => _queue;
+
   void _emit(DvrView view) {
     _view = view;
     if (!_views.isClosed) _views.add(view);
@@ -121,7 +124,7 @@ class DvrController {
         ? _clock()
         : _view.paused
         ? (_wanted ?? _view.position!)
-        : await _shown() ?? _view.position!;
+        : await shown() ?? _view.position!;
     final target = timeline.step(from, delta);
     await _go(target, paused: _view.live ? false : _view.paused);
   });
@@ -137,9 +140,9 @@ class DvrController {
     final paused = !_view.paused;
     if (paused) {
       await player.pause();
-      final shown = await _shown();
-      _wanted = shown;
-      _emit(_copy(paused: true, position: shown));
+      final at = await shown();
+      _wanted = at;
+      _emit(_copy(paused: true, position: at));
     } else {
       await player.play();
       _emit(_copy(paused: false));
@@ -239,8 +242,8 @@ class DvrController {
     await _go(next.start, paused: _view.paused);
   }
 
-  /// The real moment of the frame the player shows.
-  Future<DateTime?> _shown() async {
+  /// The real moment of the frame the player shows (null in LIVE).
+  Future<DateTime?> shown() async {
     final session = _session;
     if (session == null) return null;
     return session.head.start.add(await player.position());
@@ -276,9 +279,9 @@ class DvrController {
   /// While playing behind, the position follows the player.
   Future<void> _tick() async {
     if (_view.live || _view.paused || !_view.showing) return;
-    final shown = await _shown();
-    if (shown != null && !_view.live && !_view.paused) {
-      _emit(_copy(position: shown));
+    final at = await shown();
+    if (at != null && !_view.live && !_view.paused) {
+      _emit(_copy(position: at));
     }
   }
 
