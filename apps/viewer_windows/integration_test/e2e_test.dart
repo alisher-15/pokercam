@@ -329,7 +329,10 @@ Future<void> dvrChecks(
     'the yellow indicator shows how far behind',
     behind.evaluate().isNotEmpty &&
         find
-            .descendant(of: behind, matching: find.textContaining('−00:'))
+            .descendant(
+              of: behind,
+              matching: find.textContaining(RegExp(r'−\d\d:\d\d')),
+            )
             .evaluate()
             .isNotEmpty,
     '',

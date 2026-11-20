@@ -49,6 +49,9 @@ class MediaKitDvrPlayer implements DvrPlayer {
 
   NativePlayer get _native => _player.platform! as NativePlayer;
 
+  /// A frame at 25 fps and a little: how far from the target a landing still counts.
+  static const frame = 0.045;
+
   /// How long a seek or an open may take before it counts as failed.
   static const settleTimeout = Duration(seconds: 8);
 
@@ -107,7 +110,7 @@ class MediaKitDvrPlayer implements DvrPlayer {
     fill: Colors.black,
   );
 
-  /// Waits until mpv has finished seeking and shows the first frame at or after [target] (hr-seek). Its
+  /// Waits until mpv has finished seeking and shows the frame at [target] (hr-seek). Its
   /// time-pos alone is not enough: mpv reports the target at once, before any frame is decoded.
   Future<void> _settle(Duration target) async {
     final want = target.inMicroseconds / 1e6;
@@ -115,10 +118,9 @@ class MediaKitDvrPlayer implements DvrPlayer {
     while (watch.elapsed < settleTimeout) {
       final seeking = await _native.getProperty('seeking');
       final at = double.tryParse(await _native.getProperty('time-pos'));
-      if (seeking == 'no' &&
-          at != null &&
-          at >= want - 0.001 &&
-          at < want + 0.1) {
+      // Within a frame of the target: a camera's frames do not sit on an exact grid, and mpv may land a
+      // millisecond or two before it.
+      if (seeking == 'no' && at != null && (at - want).abs() < frame) {
         return;
       }
       await Future<void>.delayed(const Duration(milliseconds: 15));
