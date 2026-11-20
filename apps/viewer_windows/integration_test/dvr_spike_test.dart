@@ -5,7 +5,6 @@
 // precisely and how fast; does it stop at the end of a run; how long does opening at a moment take.
 // ignore_for_file: avoid_print
 
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -59,6 +58,8 @@ void main() {
             'protocol_whitelist=[udp,rtp,tcp,tls,data,file,http,https,crypto],live_start_index=0',
       ),
     );
+    // The cache in memory: media_kit asks for one on disk, which fails here ("Failed to create file cache").
+    await tester.runAsync(() => native.setProperty('cache-on-disk', 'no'));
 
     Future<T> io<T>(Future<T> Function() f) async =>
         (await tester.runAsync(f)) as T;
@@ -116,31 +117,41 @@ void main() {
       }
     }
 
-    try {
+    /// The questions for one segment type; [full] adds playback, the run's end, the openings and the sliding
+    /// playlist.
+    Future<void> sequence(String type, {required bool full}) async {
+      final p = '/$type';
+      final short = full
+          ? const Duration(seconds: 8)
+          : const Duration(seconds: 3);
       // A. One run as an EVENT playlist from its first segment; the run's time 0 is the recording's 0.
-      await open('/event.m3u8?from=0', start: 60.5);
+      await open('$p/event.m3u8?from=0', start: 60.5);
       note(
-        'A1 open EVENT from the run start at 60.5 s (paused)',
-        await land(60.5),
+        '$type A1 open EVENT from the run start at 60.5 s (paused)',
+        await land(60.5, timeout: short),
       );
       var at = 60.5;
-      for (final delta in [1.0, -1.0, 0.5, -0.5, -10.0, -10.0, 1.0]) {
+      for (final delta
+          in full ? [1.0, -1.0, 0.5, -0.5, -10.0, -10.0, 1.0] : [1.0, -10.0]) {
         at += delta;
         await seek(at);
-        note('A2 step ${delta > 0 ? '+' : ''}$delta s → $at', await land(at));
+        note(
+          '$type A2 step ${delta > 0 ? '+' : ''}$delta s → $at',
+          await land(at, timeout: short),
+        );
       }
+      if (!full) return;
       await seek(5);
-      note('A3 far back → 5 s', await land(5));
+      note('$type A3 far back → 5 s', await land(5));
       final edge = fx.now - 3;
       await seek(edge);
       note(
-        'A4 near the live edge → ${edge.toStringAsFixed(2)} s (now ${fx.now.toStringAsFixed(2)})',
+        '$type A4 near the live edge → ${edge.toStringAsFixed(2)} s (now ${fx.now.toStringAsFixed(2)})',
         await land(edge),
       );
-      note('A5 duration and cache', {
+      note('$type A5 duration and cache', {
         'duration': await prop('duration'),
         'seekable': await prop('seekable'),
-        'partially-seekable': await prop('partially-seekable'),
         'demuxer-cache-duration': await prop('demuxer-cache-duration'),
       });
 
@@ -154,7 +165,7 @@ void main() {
       final elapsed = played.elapsedMilliseconds / 1000;
       final timePos = double.tryParse(await prop('time-pos')) ?? -1;
       final paused = await land(timePos, timeout: const Duration(seconds: 2));
-      note('B1 played ~4 s from 70 s', {
+      note('$type B1 played ~4 s from 70 s', {
         'wall_s': elapsed,
         'time_pos': timePos,
         'shown_s': paused['shown_s'],
@@ -166,55 +177,58 @@ void main() {
         await wait(const Duration(milliseconds: 500));
       }
       await seek(117.5);
-      note('C1 seek near the run end → 117.5 s', await land(117.5));
-      final completed = Completer<void>();
-      final sub = player.stream.completed.listen((c) {
-        if (c && !completed.isCompleted) completed.complete();
-      });
+      note('$type C1 seek near the run end → 117.5 s', await land(117.5));
       final toEnd = Stopwatch()..start();
       await io(() => player.play());
-      var done = false;
-      while (!done && toEnd.elapsed < const Duration(seconds: 12)) {
+      String eof = 'no';
+      while (eof != 'yes' && toEnd.elapsed < const Duration(seconds: 12)) {
         await wait(const Duration(milliseconds: 100));
-        done = completed.isCompleted;
+        eof = await prop('eof-reached');
       }
-      await sub.cancel();
+      final atEnd = toEnd.elapsedMilliseconds;
       final last = await land(
         119 + 29 / fps,
         timeout: const Duration(seconds: 2),
       );
-      note('C2 played to the run end', {
-        'completed': done,
-        'ms_from_play': toEnd.elapsedMilliseconds,
+      note('$type C2 played to the run end', {
+        'eof_reached': eof,
+        'ms_from_play': atEnd,
         'expected_ms': 2500,
         'last_frame_s': last['shown_s'],
-        'eof-reached': await prop('eof-reached'),
+        'idle': await prop('idle-active'),
       });
 
       // D. Opening at a moment: from the run's start with a seek, or from the moment's own segment.
-      await open('/event.m3u8?from=0', start: 100.25);
-      note('D1 open from the run start at 100.25 s', await land(100.25));
-      await open('/event.m3u8?from=100', start: 0.25);
-      note('D2 open from segment 100 at +0.25 s', await land(100.25));
-      await open('/event.m3u8?from=120', start: 4);
-      note('D3 the second run: open from its start at +4 s', await land(127));
+      await open('$p/event.m3u8?from=0', start: 100.25);
+      note('$type D1 open from the run start at 100.25 s', await land(100.25));
+      await open('$p/event.m3u8?from=100', start: 0.25);
+      note('$type D2 open from segment 100 at +0.25 s', await land(100.25));
+      await open('$p/event.m3u8?from=120', start: 4);
+      note(
+        '$type D3 the second run: open from its start at +4 s',
+        await land(127),
+      );
+      await seek(1.5);
+      note('$type D4 the second run: seek to +1.5 s', await land(124.5));
 
       // E. media-server's sliding playlist as it is today: does the player seek in it at all?
-      await open('/live.m3u8');
+      await open('$p/live.m3u8');
       note(
-        'E1 open the sliding playlist (live_start_index=0)',
+        '$type E1 open the sliding playlist (live_start_index=0)',
         await land(0, timeout: const Duration(seconds: 5)),
       );
       await seek(30);
       note(
-        'E2 seek to 30 s in the sliding playlist',
+        '$type E2 seek to 30 s in the sliding playlist',
         await land(30, timeout: const Duration(seconds: 5)),
       );
-      await seek(10);
-      note(
-        'E3 seek back to 10 s in the sliding playlist',
-        await land(10, timeout: const Duration(seconds: 5)),
-      );
+    }
+
+    try {
+      // MPEG-TS segments: the full set of questions.
+      await sequence('mpegts', full: true);
+      // fMP4 (media-server's segments today): the first seeks only, to confirm they break.
+      await sequence('fmp4', full: false);
     } on Object catch (e, s) {
       note('the spike completed', {'error': '$e', 'stack': '$s'});
     } finally {
