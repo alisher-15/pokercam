@@ -11,6 +11,7 @@ class DvrSegment {
     required this.duration,
     required this.uri,
     this.discontinuity = false,
+    this.run = 0,
   });
 
   /// EXT-X-MEDIA-SEQUENCE numbering.
@@ -23,6 +24,10 @@ class DvrSegment {
 
   /// The first segment of a new FFmpeg run (the camera came back, FFmpeg restarted): a gap may precede it.
   final bool discontinuity;
+
+  /// Its run: the discontinuity sequence number (RFC 8216 6.2.2), the same for one segment in every reload.
+  /// Segments of one run play as one stream; another run is another stream for the player.
+  final int run;
 
   DateTime get end => start.add(duration);
 }
@@ -51,6 +56,7 @@ class DvrTimeline {
   factory DvrTimeline.parse(String playlist) {
     final segments = <DvrSegment>[];
     var sequence = 0;
+    var run = 0;
     Duration? duration;
     DateTime? date;
     var discontinuity = false;
@@ -59,6 +65,8 @@ class DvrTimeline {
       if (line.isEmpty) continue;
       if (line.startsWith('#EXT-X-MEDIA-SEQUENCE:')) {
         sequence = int.parse(line.substring(22));
+      } else if (line.startsWith('#EXT-X-DISCONTINUITY-SEQUENCE:')) {
+        run = int.parse(line.substring(30));
       } else if (line.startsWith('#EXT-X-PROGRAM-DATE-TIME:')) {
         date = DateTime.parse(line.substring(25)).toUtc();
       } else if (line.startsWith('#EXTINF:')) {
@@ -66,6 +74,7 @@ class DvrTimeline {
         duration = Duration(microseconds: (seconds * 1e6).round());
       } else if (line == '#EXT-X-DISCONTINUITY') {
         discontinuity = true;
+        run++;
       } else if (!line.startsWith('#')) {
         final start =
             date ??
@@ -78,6 +87,7 @@ class DvrTimeline {
               duration: duration,
               uri: line,
               discontinuity: discontinuity,
+              run: run,
             ),
           );
         }
@@ -99,6 +109,22 @@ class DvrTimeline {
 
   /// The DVR's live point: the end of the newest segment.
   DateTime get liveEdge => segments.last.end;
+
+  /// The oldest segment of [run] in the buffer.
+  DvrSegment? firstOfRun(int run) {
+    for (final segment in segments) {
+      if (segment.run == run) return segment;
+    }
+    return null;
+  }
+
+  /// The first segment of the run after [run], if FFmpeg has started one.
+  DvrSegment? nextRun(int run) {
+    for (final segment in segments) {
+      if (segment.run > run) return segment;
+    }
+    return null;
+  }
 
   /// The segment holding [time], or null outside the buffer or in a gap between runs.
   DvrSegment? segmentAt(DateTime time) {

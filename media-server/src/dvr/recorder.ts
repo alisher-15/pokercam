@@ -26,7 +26,8 @@ export interface RecorderSettings {
 
 /**
  * FFmpeg's command line (SPEC 7.2) for one run, started in the run's directory: RTP from the SDP file,
- * remuxed without transcoding into 1 s fMP4 segments. Its own playlist only lists the latest segments;
+ * remuxed without transcoding into 1 s MPEG-TS segments (not fMP4: after a seek FFmpeg's HLS demuxer, and so
+ * the Windows client's player, misreads fMP4 segments; see SPEC 14). Its own playlist only lists the latest segments;
  * media-server keeps the window, deletes old files and serves the playlist (see DvrIndex).
  */
 export function ffmpegArgs(sdpPath: string): string[] {
@@ -53,11 +54,9 @@ export function ffmpegArgs(sdpPath: string): string[] {
     "-hls_list_size",
     "10",
     "-hls_segment_type",
-    "fmp4",
-    "-hls_fmp4_init_filename",
-    "init.mp4",
+    "mpegts",
     "-hls_segment_filename",
-    "%d.m4s",
+    "%d.ts",
     "-hls_flags",
     "program_date_time+independent_segments",
     "index.m3u8",
@@ -230,6 +229,7 @@ export class TableDvr {
     void mkdir(dir, { recursive: true }).then(() => {
       if (recording.run !== run || run.stopping) {
         this.finishedRuns.add(id);
+        this.index.closeRun(id);
         void this.cleanRuns();
         return;
       }
@@ -253,6 +253,7 @@ export class TableDvr {
   private async onExit(recording: Recording, run: Run, code: number | null, signal: NodeJS.Signals | null): Promise<void> {
     await this.scan(recording, run);
     this.finishedRuns.add(run.id);
+    this.index.closeRun(run.id);
     if (recording.run === run) recording.run = undefined;
     await this.cleanRuns();
     if (run.stopping || recording.stopped) {
@@ -303,7 +304,7 @@ export class TableDvr {
         // FFmpeg's list only holds the last few: segments it dropped before we looked would never be deleted.
         for (let missed = run.seen + 1; missed < segment.sequence; missed++) {
           this.log.warn({ run: run.id, segment: missed }, "DVR missed a segment");
-          await rm(join(run.dir, `${String(missed)}.m4s`), { force: true });
+          await rm(join(run.dir, `${String(missed)}.ts`), { force: true });
         }
         run.seen = segment.sequence;
         run.segments++;

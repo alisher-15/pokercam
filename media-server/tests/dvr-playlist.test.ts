@@ -5,24 +5,23 @@ import { ffmpegSdp, isH264 } from "../src/dvr/sdp.js";
 
 // What FFmpeg 6/7 writes with -hls_flags program_date_time and a 10-segment list.
 const FFMPEG_PLAYLIST = `#EXTM3U
-#EXT-X-VERSION:7
+#EXT-X-VERSION:3
 #EXT-X-TARGETDURATION:1
 #EXT-X-MEDIA-SEQUENCE:4
 #EXT-X-INDEPENDENT-SEGMENTS
-#EXT-X-MAP:URI="init.mp4"
 #EXTINF:1.000000,
 #EXT-X-PROGRAM-DATE-TIME:2026-10-28T21:50:54.912+0000
-4.m4s
+4.ts
 #EXTINF:0.966667,
 #EXT-X-PROGRAM-DATE-TIME:2026-10-28T21:50:55.912+0000
-5.m4s
+5.ts
 #EXTINF:1.033333,
 #EXT-X-PROGRAM-DATE-TIME:2026-10-28T21:50:56.879+0000
 `;
 
 const segment = (sequence: number, at = 1_793_180_000_000 + sequence * 1000): RunSegment => ({
   sequence,
-  uri: `${String(sequence)}.m4s`,
+  uri: `${String(sequence)}.ts`,
   durationS: 1,
   programDateTime: at,
 });
@@ -30,8 +29,8 @@ const segment = (sequence: number, at = 1_793_180_000_000 + sequence * 1000): Ru
 describe("FFmpeg's playlist", () => {
   test("gives finished segments with their sequence, duration and wall-clock time", () => {
     expect(parseRunPlaylist(FFMPEG_PLAYLIST)).toEqual([
-      { sequence: 4, uri: "4.m4s", durationS: 1, programDateTime: Date.parse("2026-10-28T21:50:54.912Z") },
-      { sequence: 5, uri: "5.m4s", durationS: 0.966667, programDateTime: Date.parse("2026-10-28T21:50:55.912Z") },
+      { sequence: 4, uri: "4.ts", durationS: 1, programDateTime: Date.parse("2026-10-28T21:50:54.912Z") },
+      { sequence: 5, uri: "5.ts", durationS: 0.966667, programDateTime: Date.parse("2026-10-28T21:50:55.912Z") },
     ]);
   });
 
@@ -46,14 +45,14 @@ describe("the table's window", () => {
     const index = new DvrIndex(3);
     for (let i = 0; i < 3; i++) expect(index.add(1, segment(i))).toEqual([]);
     const removed = index.add(1, segment(3));
-    expect(removed.map((e) => e.uri)).toEqual(["0.m4s"]);
+    expect(removed.map((e) => e.uri)).toEqual(["0.ts"]);
     expect(index.size).toBe(3);
-    expect(index.has(1, "0.m4s")).toBe(false);
-    expect(index.has(1, "3.m4s")).toBe(true);
+    expect(index.has(1, "0.ts")).toBe(false);
+    expect(index.has(1, "3.ts")).toBe(true);
     expect(index.render()).toContain("#EXT-X-MEDIA-SEQUENCE:1\n");
   });
 
-  test("a new run gets a discontinuity and its own init segment", () => {
+  test("a new run gets a discontinuity", () => {
     const index = new DvrIndex(10);
     index.add(1, segment(0));
     index.add(1, segment(1));
@@ -61,23 +60,21 @@ describe("the table's window", () => {
     expect(index.render()).toBe(
       [
         "#EXTM3U",
-        "#EXT-X-VERSION:7",
+        "#EXT-X-VERSION:3",
         "#EXT-X-TARGETDURATION:2",
         "#EXT-X-MEDIA-SEQUENCE:0",
         "#EXT-X-DISCONTINUITY-SEQUENCE:0",
         "#EXT-X-INDEPENDENT-SEGMENTS",
-        '#EXT-X-MAP:URI="r1/init.mp4"',
         "#EXT-X-PROGRAM-DATE-TIME:2026-10-28T09:33:20.000Z",
         "#EXTINF:1.000,",
-        "r1/0.m4s",
+        "r1/0.ts",
         "#EXT-X-PROGRAM-DATE-TIME:2026-10-28T09:33:21.000Z",
         "#EXTINF:1.000,",
-        "r1/1.m4s",
+        "r1/1.ts",
         "#EXT-X-DISCONTINUITY",
-        '#EXT-X-MAP:URI="r2/init.mp4"',
         "#EXT-X-PROGRAM-DATE-TIME:2026-10-28T09:33:25.000Z",
         "#EXTINF:1.000,",
-        "r2/0.m4s",
+        "r2/0.ts",
         "",
       ].join("\n"),
     );
@@ -94,7 +91,6 @@ describe("the table's window", () => {
     const text = index.render();
     expect(text).toContain("#EXT-X-DISCONTINUITY-SEQUENCE:1\n");
     expect(text).not.toContain("#EXT-X-DISCONTINUITY\n");
-    expect(text).toContain('#EXT-X-MAP:URI="r2/init.mp4"');
     expect([...index.liveRuns()]).toEqual([2]);
   });
 
@@ -122,6 +118,53 @@ describe("the table's window", () => {
     index.add(1, segment(1));
     index.add(1, segment(2));
     expect(index.render()).toContain("#EXT-X-TARGETDURATION:3\n");
+  });
+});
+
+describe("the player's playlist of one run (?from=)", () => {
+  const event = (from: number, entries: string[], end = false): string =>
+    [
+      "#EXTM3U",
+      "#EXT-X-VERSION:3",
+      "#EXT-X-TARGETDURATION:2",
+      "#EXT-X-PLAYLIST-TYPE:EVENT",
+      `#EXT-X-MEDIA-SEQUENCE:${String(from)}`,
+      "#EXT-X-INDEPENDENT-SEGMENTS",
+      ...entries.flatMap((uri) => ["#EXTINF:1.000,", uri]),
+      ...(end ? ["#EXT-X-ENDLIST"] : []),
+      "",
+    ].join("\n");
+
+  test("lists that segment's run from it on, and grows with the run", () => {
+    const index = new DvrIndex(10);
+    index.add(1, segment(0));
+    index.add(1, segment(1));
+    index.add(2, segment(0));
+    expect(index.renderRun(1)).toBe(event(1, ["r1/1.ts"]));
+    expect(index.renderRun(2)).toBe(event(2, ["r2/0.ts"]));
+    index.add(2, segment(1));
+    expect(index.renderRun(2)).toBe(event(2, ["r2/0.ts", "r2/1.ts"]));
+  });
+
+  test("ends when FFmpeg has finished the run", () => {
+    const index = new DvrIndex(10);
+    index.add(1, segment(0));
+    index.add(1, segment(1));
+    index.closeRun(1);
+    expect(index.renderRun(0)).toBe(event(0, ["r1/0.ts", "r1/1.ts"], true));
+  });
+
+  test("keeps its head after the window has moved on, until the history is full", () => {
+    const index = new DvrIndex(2, 3);
+    for (let i = 0; i < 4; i++) index.add(1, segment(i));
+    expect(index.render()).toContain("#EXT-X-MEDIA-SEQUENCE:2\n");
+    expect(index.has(1, "0.ts")).toBe(false);
+    expect(index.renderRun(0)).toBe(event(0, ["r1/0.ts", "r1/1.ts", "r1/2.ts", "r1/3.ts"]));
+    index.add(1, segment(4));
+    index.add(1, segment(5));
+    expect(index.renderRun(0)).toBeUndefined();
+    expect(index.renderRun(1)).toBe(event(1, ["r1/1.ts", "r1/2.ts", "r1/3.ts", "r1/4.ts", "r1/5.ts"]));
+    expect(index.renderRun(9)).toBeUndefined();
   });
 });
 

@@ -85,14 +85,13 @@ async function killFfmpeg(): Promise<void> {
   }
 }
 
-/** Codec and size of a segment as a player would see it: init segment + media segment through ffprobe. */
+/** Codec and size of a segment as a player would see it: the MPEG-TS segment through ffprobe. */
 async function probe(tableId: string, jwt: string, entry: Entry): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "pokercam-probe-"));
   try {
-    const init = Buffer.from(await (await dvrGet(`/dvr/${tableId}/r${String(entry.run)}/init.mp4`, jwt)).arrayBuffer());
     const media = Buffer.from(await (await dvrGet(`/dvr/${tableId}/${entry.uri}`, jwt)).arrayBuffer());
-    const file = join(dir, "segment.mp4");
-    await writeFile(file, Buffer.concat([init, media]));
+    const file = join(dir, "segment.ts");
+    await writeFile(file, media);
     const { stdout } = await run("ffprobe", ["-v", "error", "-select_streams", "v:0", "-count_frames", "-show_entries", "stream=codec_name,width,height,nb_read_frames", "-of", "csv=p=0", file]);
     return stdout.trim();
   } finally {

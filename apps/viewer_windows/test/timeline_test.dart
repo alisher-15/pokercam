@@ -8,28 +8,26 @@ String stamp(Duration d) => t0.add(d).toIso8601String();
 
 final playlist = [
   '#EXTM3U',
-  '#EXT-X-VERSION:7',
+  '#EXT-X-VERSION:3',
   '#EXT-X-TARGETDURATION:1',
   '#EXT-X-MEDIA-SEQUENCE:100',
   '#EXT-X-DISCONTINUITY-SEQUENCE:3',
   '#EXT-X-INDEPENDENT-SEGMENTS',
-  '#EXT-X-MAP:URI="r4/init.mp4"',
   for (var i = 0; i < 5; i++) ...[
     '#EXT-X-PROGRAM-DATE-TIME:${stamp(Duration(seconds: i))}',
     '#EXTINF:1.000,',
-    'r4/$i.m4s',
+    'r4/$i.ts',
   ],
   '#EXT-X-DISCONTINUITY',
-  '#EXT-X-MAP:URI="r5/init.mp4"',
   '#EXT-X-PROGRAM-DATE-TIME:${stamp(const Duration(seconds: 7))}',
   '#EXTINF:1.000,',
-  'r5/0.m4s',
+  'r5/0.ts',
   '#EXT-X-PROGRAM-DATE-TIME:${stamp(const Duration(seconds: 8))}',
   '#EXTINF:0.967,',
-  'r5/1.m4s',
+  'r5/1.ts',
   '#EXT-X-PROGRAM-DATE-TIME:${stamp(const Duration(milliseconds: 8967))}',
   '#EXTINF:1.000,',
-  'r5/2.m4s',
+  'r5/2.ts',
 ].join('\n');
 
 DateTime at(int ms) => t0.add(Duration(milliseconds: ms));
@@ -42,10 +40,21 @@ void main() {
     expect(timeline.segments.first.sequence, 100);
     expect(timeline.segments.last.sequence, 107);
     expect(timeline.segments[5].discontinuity, isTrue);
-    expect(timeline.segments[5].uri, 'r5/0.m4s');
+    expect(timeline.segments[5].uri, 'r5/0.ts');
     expect(timeline.segments[6].duration, const Duration(milliseconds: 967));
     expect(timeline.start, t0);
     expect(timeline.liveEdge, at(9967));
+  });
+
+  test('runs: the discontinuity sequence, the first segment of a run, the next run', () {
+    expect(timeline.segments.map((s) => s.run).toSet(), {3, 4});
+    expect(timeline.segments[4].run, 3);
+    expect(timeline.segments[5].run, 4);
+    expect(timeline.firstOfRun(3)?.sequence, 100);
+    expect(timeline.firstOfRun(4)?.sequence, 105);
+    expect(timeline.firstOfRun(9), isNull);
+    expect(timeline.nextRun(3)?.uri, 'r5/0.ts');
+    expect(timeline.nextRun(4), isNull);
   });
 
   test('a segment without its own date follows the one before; one with none before is left out', () {
@@ -54,15 +63,15 @@ void main() {
         '#EXTM3U',
         '#EXT-X-MEDIA-SEQUENCE:7',
         '#EXTINF:1.000,',
-        'unknown.m4s',
+        'unknown.ts',
         '#EXT-X-PROGRAM-DATE-TIME:${stamp(Duration.zero)}',
         '#EXTINF:1.000,',
-        'a.m4s',
+        'a.ts',
         '#EXTINF:0.500,',
-        'b.m4s',
+        'b.ts',
       ].join('\n'),
     );
-    expect(parsed.segments.map((s) => s.uri), ['a.m4s', 'b.m4s']);
+    expect(parsed.segments.map((s) => s.uri), ['a.ts', 'b.ts']);
     expect(parsed.segments.map((s) => s.sequence), [8, 9]);
     expect(parsed.segments.last.start, at(1000));
     expect(parsed.liveEdge, at(1500));
@@ -70,9 +79,9 @@ void main() {
   });
 
   test('the segment holding a moment; none in the gap between runs or outside the buffer', () {
-    expect(timeline.segmentAt(at(2500))?.uri, 'r4/2.m4s');
-    expect(timeline.segmentAt(at(8966))?.uri, 'r5/1.m4s');
-    expect(timeline.segmentAt(at(8967))?.uri, 'r5/2.m4s');
+    expect(timeline.segmentAt(at(2500))?.uri, 'r4/2.ts');
+    expect(timeline.segmentAt(at(8966))?.uri, 'r5/1.ts');
+    expect(timeline.segmentAt(at(8967))?.uri, 'r5/2.ts');
     expect(timeline.segmentAt(at(6000)), isNull);
     expect(timeline.segmentAt(at(-1)), isNull);
     expect(timeline.segmentAt(at(9967)), isNull);

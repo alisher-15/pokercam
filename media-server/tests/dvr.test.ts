@@ -91,7 +91,7 @@ describe("recording", () => {
     expect(response.headers.get("content-type")).toBe("application/vnd.apple.mpegurl");
     const playlist = await response.text();
     expect(playlist).toMatch(/^#EXTM3U\n/);
-    expect(playlist).toContain('#EXT-X-MAP:URI="r1/init.mp4"');
+    expect(playlist).toContain("\nr1/0.ts\n");
     const durations = [...playlist.matchAll(/#EXTINF:([\d.]+),/g)].map((m) => Number(m[1]));
     for (const d of durations.slice(1)) expect(d).toBeCloseTo(1, 1);
 
@@ -99,10 +99,28 @@ describe("recording", () => {
     if (!first) throw new Error("no segment");
     const segment = await get(`/dvr/${table}/r1/${first.uri}`, jwt);
     expect(segment.status).toBe(200);
-    expect(segment.headers.get("content-type")).toBe("video/iso.segment");
-    expect((await segment.arrayBuffer()).byteLength).toBeGreaterThan(1000);
-    expect((await get(`/dvr/${table}/r1/init.mp4`, jwt)).status).toBe(200);
+    expect(segment.headers.get("content-type")).toBe("video/mp2t");
+    const bytes = new Uint8Array(await segment.arrayBuffer());
+    expect(bytes.byteLength).toBeGreaterThan(1000);
+    // MPEG-TS: 188-byte packets, each starting with the sync byte.
+    expect(bytes[0]).toBe(0x47);
+    expect(bytes[188]).toBe(0x47);
   }, 20_000);
+
+  test("the player's playlist: the run from a given segment, as an EVENT playlist", async () => {
+    const dvr = server.dvr?.table(table);
+    const first = dvr?.index.first;
+    if (!first) throw new Error("no segment");
+    const response = await get(`/dvr/${table}/index.m3u8?from=${String(first.mediaSequence)}`, jwt);
+    expect(response.status).toBe(200);
+    const text = await response.text();
+    expect(text).toContain("#EXT-X-PLAYLIST-TYPE:EVENT\n");
+    expect(text).toContain(`#EXT-X-MEDIA-SEQUENCE:${String(first.mediaSequence)}\n`);
+    expect(text).toContain(`\nr${String(first.run)}/${first.uri}\n`);
+    expect(text).not.toContain("#EXT-X-ENDLIST");
+    expect((await get(`/dvr/${table}/index.m3u8?from=99999`, jwt)).status).toBe(404);
+    expect((await get(`/dvr/${table}/index.m3u8?from=-1`, jwt)).status).toBe(400);
+  });
 
   test("program date-times follow the wall clock: a new segment ends about now", async () => {
     const dvr = server.dvr?.table(table);
@@ -127,8 +145,8 @@ describe("recording", () => {
   test("the window keeps the last N segments and deletes older files", async () => {
     const dvr = await until("a full window", () => server.dvr?.table(table)?.index.first?.mediaSequence && server.dvr.table(table), 20_000);
     expect(dvr.index.size).toBe(10);
-    expect(existsSync(join(dvr.dir, "r1", "0.m4s"))).toBe(false);
-    expect((await get(`/dvr/${table}/r1/0.m4s`, jwt)).status).toBe(404);
+    expect(existsSync(join(dvr.dir, "r1", "0.ts"))).toBe(false);
+    expect((await get(`/dvr/${table}/r1/0.ts`, jwt)).status).toBe(404);
   }, 25_000);
 
   test("killed FFmpeg: recording resumes within 5 s after a discontinuity", async () => {
@@ -141,7 +159,10 @@ describe("recording", () => {
     expect(Date.now() - killedAt).toBeLessThan(5000);
     const playlist = await (await get(`/dvr/${table}/index.m3u8`, jwt)).text();
     expect(playlist).toContain("#EXT-X-DISCONTINUITY\n");
-    expect(playlist).toContain('#EXT-X-MAP:URI="r2/init.mp4"');
+    expect(playlist).toContain("\nr2/0.ts\n");
+    // The killed run is over: its playlist for the player ends.
+    const head = (await get(`/dvr/${table}/index.m3u8?from=${String(dvr.index.first?.mediaSequence ?? 0)}`, jwt)).text();
+    expect(await head).toContain("#EXT-X-ENDLIST\n");
   }, 15_000);
 
   test("a new camera starts a new run; when it leaves, the buffer stays", async () => {
@@ -182,7 +203,7 @@ describe("access (SPEC 7.4: someone else's table or no token → 401/403)", () =
 
   test("paths outside the window or the layout: 404", async () => {
     const jwt = viewerToken(table);
-    expect((await get(`/dvr/${table}/r99/init.mp4`, jwt)).status).toBe(404);
+    expect((await get(`/dvr/${table}/r99/0.ts`, jwt)).status).toBe(404);
     expect((await get(`/dvr/${table}/r1/../../input.sdp`, jwt)).status).toBe(404);
     expect((await get(`/dvr/${table}/input.sdp`, jwt)).status).toBe(404);
   });

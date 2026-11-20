@@ -1,6 +1,7 @@
-// The DVR playlist (SPEC 7.2): FFmpeg writes a short HLS playlist per run, media-server keeps the
+// The DVR playlists (SPEC 7.2): FFmpeg writes a short HLS playlist per run, media-server keeps the
 // table's last N segments across runs and serves one sliding-window playlist with a discontinuity
-// (and the run's own init segment) wherever FFmpeg restarted or the camera changed.
+// wherever FFmpeg restarted or the camera changed. For the player it also serves one run from a given
+// segment on as an EVENT playlist (?from=): its head never moves, so a player can seek in it.
 
 /** A finished segment as FFmpeg listed it. */
 export interface RunSegment {
@@ -55,9 +56,17 @@ export interface DvrEntry extends RunSegment {
   discontinuity: boolean;
 }
 
-/** One table's buffer: the last `capacity` segments of all runs, oldest first. */
+/**
+ * One table's buffer: the last `capacity` segments of all runs, oldest first. The segments that fell out
+ * stay listed in the runs' EVENT playlists for `history` more (their files are gone), so the playlist a
+ * player has open keeps its head.
+ */
 export class DvrIndex {
   private readonly entries: DvrEntry[] = [];
+  /** Entries that fell out of the window, oldest first, at most `history`. */
+  private readonly past: DvrEntry[] = [];
+  /** Runs FFmpeg has finished: their EVENT playlists end (EXT-X-ENDLIST). */
+  private readonly closed = new Set<number>();
   /** `r{run}/{uri}` of every entry, for serving only what the playlist lists. */
   private readonly paths = new Set<string>();
   /** Per run, ms to add to FFmpeg's program date-times so they match the wall clock (see setClockOffset). */
@@ -68,7 +77,10 @@ export class DvrIndex {
   /** HLS forbids changing it, so it only grows, and only if a segment is longer than expected. */
   private targetDuration = 2;
 
-  constructor(readonly capacity: number) {}
+  constructor(
+    readonly capacity: number,
+    readonly history = capacity * 6,
+  ) {}
 
   get size(): number {
     return this.entries.length;
@@ -96,11 +108,20 @@ export class DvrIndex {
     this.targetDuration = Math.max(this.targetDuration, Math.ceil(segment.durationS));
     const removed = this.entries.splice(0, Math.max(0, this.entries.length - this.capacity));
     for (const e of removed) this.paths.delete(path(e.run, e.uri));
+    this.past.push(...removed);
+    this.past.splice(0, Math.max(0, this.past.length - this.history));
     const live = this.liveRuns();
     for (const r of this.offsets.keys()) if (!live.has(r)) this.offsets.delete(r);
+    const listed = new Set([...this.past, ...this.entries].map((e) => e.run));
+    for (const r of this.closed) if (!listed.has(r)) this.closed.delete(r);
     // RFC 8216 6.2.2: dropping a segment that carries EXT-X-DISCONTINUITY bumps the sequence.
     this.discontinuitySequence += removed.filter((e) => e.discontinuity).length;
     return removed;
+  }
+
+  /** FFmpeg finished this run: no segment will be added to it. */
+  closeRun(run: number): void {
+    this.closed.add(run);
   }
 
   /** Runs that still have segments in the window. */
@@ -139,23 +160,48 @@ export class DvrIndex {
   render(): string {
     const lines = [
       "#EXTM3U",
-      "#EXT-X-VERSION:7",
+      "#EXT-X-VERSION:3",
       `#EXT-X-TARGETDURATION:${String(this.targetDuration)}`,
       `#EXT-X-MEDIA-SEQUENCE:${String(this.first?.mediaSequence ?? this.nextMediaSequence)}`,
       `#EXT-X-DISCONTINUITY-SEQUENCE:${String(this.discontinuitySequence)}`,
       "#EXT-X-INDEPENDENT-SEGMENTS",
     ];
-    let run: number | undefined;
     for (const entry of this.entries) {
       if (entry.discontinuity) lines.push("#EXT-X-DISCONTINUITY");
-      if (entry.run !== run) lines.push(`#EXT-X-MAP:URI="r${String(entry.run)}/init.mp4"`);
-      run = entry.run;
       lines.push(
         `#EXT-X-PROGRAM-DATE-TIME:${new Date(Math.round(this.programDateTime(entry))).toISOString()}`,
         `#EXTINF:${entry.durationS.toFixed(3)},`,
         `r${String(entry.run)}/${entry.uri}`,
       );
     }
+    return `${lines.join("\n")}\n`;
+  }
+
+  /**
+   * The player's playlist: the run of segment `from` (a media sequence number) from that segment on, as an
+   * EVENT playlist that only grows and ends when FFmpeg has finished the run. A player seeks in it, which it
+   * cannot do in the sliding window (FFmpeg's HLS demuxer maps time to segments from the playlist's head).
+   * Without program date-times, to keep it small: the player reloads it every second. Undefined when that
+   * segment is no longer remembered.
+   */
+  renderRun(from: number): string | undefined {
+    const all = [...this.past, ...this.entries];
+    const head = all.find((e) => e.mediaSequence === from);
+    if (!head) return undefined;
+    const lines = [
+      "#EXTM3U",
+      "#EXT-X-VERSION:3",
+      `#EXT-X-TARGETDURATION:${String(this.targetDuration)}`,
+      "#EXT-X-PLAYLIST-TYPE:EVENT",
+      `#EXT-X-MEDIA-SEQUENCE:${String(from)}`,
+      "#EXT-X-INDEPENDENT-SEGMENTS",
+    ];
+    for (const entry of all) {
+      if (entry.run === head.run && entry.mediaSequence >= from) {
+        lines.push(`#EXTINF:${entry.durationS.toFixed(3)},`, `r${String(entry.run)}/${entry.uri}`);
+      }
+    }
+    if (this.closed.has(head.run)) lines.push("#EXT-X-ENDLIST");
     return `${lines.join("\n")}\n`;
   }
 }
