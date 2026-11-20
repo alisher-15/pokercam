@@ -1,5 +1,5 @@
-# Stage 7 spike, temporary: media_kit's player seeking in a growing DVR recording on a real Windows machine
-# (apps/viewer_windows/integration_test/dvr_spike_test.dart). Goes away once the stage's e2e covers the DVR.
+# Stage 7, temporary while the stage is built: the DVR's precision on a real Windows machine
+# (apps/viewer_windows/integration_test/dvr_player_test.dart). Moves into ci.yml's Windows job.
 name: DVR spike (stage 7)
 
 on:
@@ -31,6 +31,6 @@ jobs:
         run: |
           if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { choco install ffmpeg -y --no-progress }
           ffmpeg -hide_banner -version | Select-Object -First 1
-      - name: Seeking with media_kit
+      - name: Every DVR key on the expected frame
         working-directory: apps/viewer_windows
-        run: flutter test integration_test/dvr_spike_test.dart -d windows --reporter expanded
+        run: flutter test integration_test/dvr_player_test.dart -d windows --reporter expanded

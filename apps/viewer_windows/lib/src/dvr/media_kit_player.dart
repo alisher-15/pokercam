@@ -3,6 +3,7 @@
 library;
 
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
@@ -95,6 +96,9 @@ class MediaKitDvrPlayer implements DvrPlayer {
     await _player.dispose();
     await _ended.close();
   }
+
+  /// The frame shown as raw BGRA (the tests read the frame numbers of their recording from it).
+  Future<Uint8List?> screenshotRaw() => _player.screenshot(format: null);
 
   @override
   Widget view() => Video(

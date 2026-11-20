@@ -1,8 +1,9 @@
 // A DVR recording made up for the player tests (SPEC 12, stage 7): FFmpeg encodes two runs of H.264 in 1 s
-// segments, as media-server's recorder writes them, and every frame carries its own number in 16 black and white
-// stripes, so a screenshot tells exactly which moment the player shows. A small HTTP server then plays
-// media-server: the recording grows in real time, with the playlists media-server serves. The runs are encoded
-// twice, in fMP4 and in MPEG-TS segments, on the same timeline.
+// MPEG-TS segments, as media-server's recorder writes them, and every frame carries its own number in 16 black
+// and white stripes, so a screenshot tells exactly which moment the player shows. A small HTTP server then
+// plays media-server: the recording grows in real time, with the playlists media-server serves at the same
+// paths (/dvr/{table}/index.m3u8, ?from=, r{run}/{n}.ts). Program date-times are the wall clock: the
+// recording's second s is [HlsFixture.realTime].
 library;
 
 import 'dart:io';
@@ -12,8 +13,11 @@ const height = 720;
 const fps = 30;
 const token = 'fixture-token';
 
-/// Segment formats: FFmpeg's `-hls_segment_type`.
-const segmentTypes = ['fmp4', 'mpegts'];
+/// Segment formats: FFmpeg's `-hls_segment_type` (fMP4 broke after seeks in the stage 7 spike; kept to show it).
+const segmentTypes = ['mpegts'];
+
+/// The fixture's table id in the paths.
+const fixtureTable = '00000000-0000-4000-8000-0000000000d7';
 
 /// One FFmpeg run: its segments start at [start] seconds of real time; frame numbers count real time, so frame f
 /// is the moment f / 30 s whatever the run.
@@ -110,7 +114,8 @@ int? frameNumber(List<int> bgra) {
 
 /// media-server for the recording: by [preRecorded] seconds after [startedAt] the first run has that much
 /// recorded, and segments appear as real time passes. Requests need `Authorization: Bearer fixture-token`, as
-/// /dvr/ does. Paths: /{type}/live.m3u8, /{type}/event.m3u8?from=N, /{type}/r{run}/{file}.
+/// /dvr/ does. Paths: /dvr/{table}/index.m3u8 (?from=N), /dvr/{table}/r{run}/{file}, for MPEG-TS; and the
+/// spike's /{type}/live.m3u8, /{type}/event.m3u8?from=N, /{type}/r{run}/{file}.
 class HlsFixture {
   HlsFixture._(this.dir, this.runs, this._server, this.preRecorded)
     : startedAt = DateTime.now() {
@@ -142,6 +147,13 @@ class HlsFixture {
   String get url => 'http://127.0.0.1:${_server.port}';
 
   Map<String, String> get headers => {'Authorization': 'Bearer $token'};
+
+  /// media-server's playlist URL for the recording.
+  Uri get playlist => Uri.parse('$url/dvr/$fixtureTable/index.m3u8');
+
+  /// Seconds from the recording's start of a real moment.
+  double secondsOf(DateTime time) =>
+      preRecorded + time.difference(startedAt).inMicroseconds / 1e6;
 
   /// Real time now, seconds from the recording's start.
   double get now =>
@@ -194,6 +206,46 @@ class HlsFixture {
     return '${lines.join('\n')}\n';
   }
 
+  /// media-server's sliding playlist (DvrIndex.render): a discontinuity between runs, the discontinuity sequence.
+  String window() {
+    final segments = finished('mpegts').toList();
+    final lines = [
+      '#EXTM3U',
+      '#EXT-X-VERSION:3',
+      '#EXT-X-TARGETDURATION:2',
+      '#EXT-X-MEDIA-SEQUENCE:${segments.isEmpty ? 0 : segments.first.sequence}',
+      '#EXT-X-DISCONTINUITY-SEQUENCE:0',
+      '#EXT-X-INDEPENDENT-SEGMENTS',
+    ];
+    FixtureRun? run;
+    for (final s in segments) {
+      if (run != null && s.run != run) lines.add('#EXT-X-DISCONTINUITY');
+      run = s.run;
+      lines.add(_segment('mpegts', s));
+    }
+    return '${lines.join('\n')}\n';
+  }
+
+  /// media-server's player playlist (DvrIndex.renderRun): one run from [from] on, without program date-times.
+  String runFrom(int from) {
+    final first = segment('mpegts', from);
+    final lines = [
+      '#EXTM3U',
+      '#EXT-X-VERSION:3',
+      '#EXT-X-TARGETDURATION:2',
+      '#EXT-X-PLAYLIST-TYPE:EVENT',
+      '#EXT-X-MEDIA-SEQUENCE:$from',
+      '#EXT-X-INDEPENDENT-SEGMENTS',
+      for (final s in finished('mpegts'))
+        if (s.run == first.run && s.sequence >= from) ...[
+          '#EXTINF:${s.duration.toStringAsFixed(3)},',
+          'r${s.run.id}/${s.uri}',
+        ],
+      if (isOver('mpegts', first.run)) '#EXT-X-ENDLIST',
+    ];
+    return '${lines.join('\n')}\n';
+  }
+
   /// One run from segment [from] on, as an EVENT playlist: it only grows, and ends when the run is over.
   String event(String type, int from) {
     final first = segment(type, from);
@@ -222,7 +274,22 @@ class HlsFixture {
         response.statusCode = 401;
         return;
       }
-      final parts = request.uri.pathSegments;
+      var parts = request.uri.pathSegments;
+      final dvr =
+          parts.length >= 3 && parts[0] == 'dvr' && parts[1] == fixtureTable;
+      if (dvr) {
+        if (parts.length == 3 && parts[2] == 'index.m3u8') {
+          requests.update('playlist', (n) => n + 1, ifAbsent: () => 1);
+          response.headers.contentType = ContentType(
+            'application',
+            'vnd.apple.mpegurl',
+          );
+          final from = int.tryParse(request.uri.queryParameters['from'] ?? '');
+          response.write(from == null ? window() : runFrom(from));
+          return;
+        }
+        parts = ['mpegts', ...parts.skip(2)];
+      }
       final type = parts.isEmpty ? '' : parts.first;
       if (!runs.containsKey(type)) {
         response.statusCode = 404;
