@@ -316,6 +316,21 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
     await waitFor(tester, find.textContaining('No rewind yet'));
     expect(find.byKey(const Key('watch-live')), findsOneWidget);
+    // The keys are the DVR's only: the arrows do not walk the focus over the buttons, and Space does not press
+    // one of them (here it would open the tables).
+    for (final key in [
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.space,
+    ]) {
+      await tester.sendKeyEvent(key);
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('watch-panel')), findsOneWidget);
+    expect(find.byKey(const Key('table-1-open')), findsNothing);
     await close(tester);
   });
 

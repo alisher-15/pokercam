@@ -123,42 +123,75 @@ class WatchCubit extends Cubit<WatchState> {
   }
 }
 
-class WatchScreen extends StatelessWidget {
+class WatchScreen extends StatefulWidget {
   const WatchScreen({super.key, required this.connection, required this.table});
 
   final Connection connection;
   final TableInfo table;
 
   @override
+  State<WatchScreen> createState() => _WatchScreenState();
+}
+
+/// SPEC 8.3: the DVR keys go to one focus node of this screen. Its buttons and sliders take no keyboard focus
+/// (the mouse works as ever): otherwise the arrows would also move the focus and Space would press the
+/// focused button.
+class _WatchScreenState extends State<WatchScreen> {
+  final _video = GlobalKey<_VideoAreaState>();
+  final _keys = FocusNode(debugLabel: 'dvr-keys');
+
+  @override
+  void dispose() {
+    _keys.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final app = context.read<AppCubit>();
+    final connection = widget.connection;
+    final table = widget.table;
     return BlocProvider(
       create: (context) =>
           WatchCubit(context.read<Services>(), app, connection, table)..start(),
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(l10n.tableName(table.number)),
-          actions: [
-            TextButton(
-              key: const Key('watch-pair'),
-              onPressed: () => showPairingDialog(context, connection, table),
-              child: Text(l10n.pairPhone),
+      child: Focus(
+        focusNode: _keys,
+        autofocus: true,
+        onKeyEvent: (node, event) =>
+            _video.currentState?.onKey(event) ?? KeyEventResult.ignored,
+        // A click anywhere on the screen brings the keys back here (after a dialog, say).
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) => _keys.requestFocus(),
+          child: ExcludeFocus(
+            child: Scaffold(
+              appBar: AppBar(
+                title: Text(l10n.tableName(table.number)),
+                actions: [
+                  TextButton(
+                    key: const Key('watch-pair'),
+                    onPressed: () =>
+                        showPairingDialog(context, connection, table),
+                    child: Text(l10n.pairPhone),
+                  ),
+                  TextButton(
+                    key: const Key('watch-tables'),
+                    onPressed: app.showTables,
+                    child: Text(l10n.tablesTitle),
+                  ),
+                ],
+              ),
+              body: _AlertToasts(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: _VideoArea(key: _video)),
+                    const SizedBox(width: 360, child: _SidePanel()),
+                  ],
+                ),
+              ),
             ),
-            TextButton(
-              key: const Key('watch-tables'),
-              onPressed: app.showTables,
-              child: Text(l10n.tablesTitle),
-            ),
-          ],
-        ),
-        body: const _AlertToasts(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: _VideoArea()),
-              SizedBox(width: 360, child: _SidePanel()),
-            ],
           ),
         ),
       ),
@@ -212,7 +245,7 @@ class _AlertToastsState extends State<_AlertToasts> {
 /// The camera live, with the DVR over it while behind (SPEC 8.2): the live video keeps playing underneath, so
 /// LIVE is back at once; going behind, the live frame stays frozen until the DVR shows its moment.
 class _VideoArea extends StatefulWidget {
-  const _VideoArea();
+  const _VideoArea({super.key});
 
   @override
   State<_VideoArea> createState() => _VideoAreaState();
@@ -224,27 +257,22 @@ class _VideoAreaState extends State<_VideoArea> {
   DateTime? _toldUnavailable;
 
   @override
-  void initState() {
-    super.initState();
-    HardwareKeyboard.instance.addHandler(_onKey);
-  }
-
-  @override
   void dispose() {
-    HardwareKeyboard.instance.removeHandler(_onKey);
     _frozen?.dispose();
     super.dispose();
   }
 
-  /// SPEC 8.3: the keys work while this window has the focus, but not in a text field.
-  bool _onKey(KeyEvent event) {
+  /// A key on the watch screen: a DVR key is used here, any other goes on (a text field keeps its own keys).
+  KeyEventResult onKey(KeyEvent event) {
     final action = dvrAction(
       event,
       shift: HardwareKeyboard.instance.isShiftPressed,
     );
-    if (action == null || !mounted || focusInTextField()) return false;
+    if (action == null || !mounted || focusInTextField()) {
+      return KeyEventResult.ignored;
+    }
     unawaited(_run(action));
-    return true;
+    return KeyEventResult.handled;
   }
 
   Future<void> _run(Future<void> Function(DvrController dvr) action) async {
