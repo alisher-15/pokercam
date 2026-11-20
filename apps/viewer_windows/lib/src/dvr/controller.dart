@@ -78,7 +78,9 @@ class DvrController {
   }
 
   final DvrPlayer player;
-  final DvrSource source;
+
+  /// Replaced when the session gets a new token (each reconnection).
+  DvrSource source;
   final Duration refreshEvery;
   final Duration tickEvery;
 
@@ -176,28 +178,31 @@ class DvrController {
   /// Moves the DVR to [target] (already inside the buffer): a seek in the open run, or the run opened anew.
   Future<void> _go(DateTime target, {required bool paused}) async {
     final timeline = _timeline!;
-    _wanted = target;
     final enter = _view.live;
+    // At the end of a run (the live point, or the edge of a gap between runs) no segment holds the moment:
+    // the segment that ends there, and its last moments rather than a wait for the next one.
+    final segment =
+        timeline.segmentAt(target) ??
+        timeline.segments.lastWhere(
+          (s) => s.start.isBefore(target),
+          orElse: () => timeline.segments.first,
+        );
+    var at = target;
+    if (!at.isBefore(segment.end)) {
+      at = segment.end.subtract(const Duration(milliseconds: 100));
+    }
+    // The next step counts from the moment shown.
+    _wanted = at;
     _emit(
       DvrView(
         live: false,
-        position: target,
+        position: at,
         paused: paused,
         timeline: timeline,
         showing: !enter && _view.showing,
       ),
     );
     if (enter) _startTimers();
-    // At the live point the newest segment ends: show its last moments rather than wait for the next one.
-    final segment =
-        timeline.segmentAt(target) ??
-        (target.isBefore(timeline.start)
-            ? timeline.segments.first
-            : timeline.segments.last);
-    var at = target;
-    if (!at.isBefore(segment.end)) {
-      at = segment.end.subtract(const Duration(milliseconds: 100));
-    }
     final session = _session;
     final watch = Stopwatch()..start();
     if (session != null &&
@@ -221,7 +226,7 @@ class DvrController {
       'reopened': !identical(session, _session),
       'paused': paused,
     });
-    if (_wanted == target) _emit(_copy(position: at, showing: true));
+    if (_wanted == at) _emit(_copy(position: at, showing: true));
   }
 
   /// The run being played has ended (FFmpeg restarted): on to the next run, if there is one.

@@ -108,7 +108,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
                     _Message(l10n.errorRevoked),
                   if (state.error != null)
                     _Message(
-                      apiErrorText(l10n, state.error!),
+                      apiErrorText(l10n, state.error!, activation: true),
                       key: const Key('activation-error'),
                     ),
                   TextField(

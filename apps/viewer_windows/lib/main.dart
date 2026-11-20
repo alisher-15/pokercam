@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:shared/shared.dart';
 
 import 'src/app.dart';
@@ -8,6 +9,8 @@ import 'src/subscriber.dart';
 /// `viewer_windows.exe [--table <id>]`: a window for one table (SPEC 8); without it, the tables list.
 void main(List<String> args) {
   WidgetsFlutterBinding.ensureInitialized();
+  // The DVR's player (SPEC 8.2).
+  MediaKit.ensureInitialized();
   final log = JsonLog('viewer');
   final table = args.indexOf('--table');
   runApp(

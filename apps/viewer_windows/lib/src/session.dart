@@ -40,6 +40,38 @@ class AlertEntry {
   final DateTime at;
 }
 
+/// The table's DVR on media-server (SPEC 7.2, dvr.info): its playlist and the token to fetch it with.
+class DvrAccess {
+  const DvrAccess({
+    required this.playlist,
+    required this.token,
+    required this.from,
+    required this.to,
+  });
+
+  /// /dvr/{table_id}/index.m3u8 on media-server's HTTP address.
+  final Uri playlist;
+
+  /// The table's viewer access token, sent as `Authorization: Bearer`.
+  final String token;
+
+  /// The buffer's bounds as of the last dvr.info.
+  final DateTime from;
+  final DateTime to;
+
+  Map<String, String> get headers => {'Authorization': 'Bearer $token'};
+}
+
+/// media-server's HTTP address for its WebSocket URL: ws://host:3000/ws → http://host:3000.
+Uri mediaHttpBase(String mediaUrl) {
+  final ws = Uri.parse(mediaUrl);
+  return ws.replace(
+    scheme: ws.scheme == 'wss' ? 'https' : 'http',
+    path: '/',
+    query: null,
+  );
+}
+
 const _keep = Object();
 
 /// What the watch screen shows.
@@ -55,6 +87,7 @@ class WatchState {
     this.capabilities,
     this.controls = const {},
     this.alerts = const [],
+    this.dvr,
   });
 
   final WatchPhase phase;
@@ -76,6 +109,9 @@ class WatchState {
   /// Newest first, at most 50.
   final List<AlertEntry> alerts;
 
+  /// The table's DVR, once media-server has said it records (dvr.info): none for a camera without H.264.
+  final DvrAccess? dvr;
+
   WatchState copyWith({
     WatchPhase? phase,
     RoomLicenseStatus? license,
@@ -87,6 +123,7 @@ class WatchState {
     CameraParamCapabilities? capabilities,
     Map<CameraParam, CameraControl>? controls,
     List<AlertEntry>? alerts,
+    DvrAccess? dvr,
   }) => WatchState(
     phase: phase ?? this.phase,
     license: license ?? this.license,
@@ -104,6 +141,7 @@ class WatchState {
     capabilities: capabilities ?? this.capabilities,
     controls: controls ?? this.controls,
     alerts: alerts ?? this.alerts,
+    dvr: dvr ?? this.dvr,
   );
 }
 
@@ -156,6 +194,7 @@ class TableSession {
   bool _producerAnnounced = false;
   Completer<void>? _wake;
   Timer? _statsTimer;
+  TokenResponse? _token;
 
   WatchState get state => _state;
   Stream<WatchState> get states => _states.stream;
@@ -220,6 +259,7 @@ class TableSession {
     StreamSubscription<void>? failures;
     try {
       final token = await tokens(tableId);
+      _token = token;
       final opened = await _connect(token.mediaUrl, tableId);
       socket = opened;
       // Listen before joining: the room's state (license, camera, its producer) follows join's reply at once.
@@ -378,6 +418,20 @@ class TableSession {
             ?.complete(
               SetResult(ok: ack.ok, error: ack.error, applied: ack.applied),
             );
+      case 'dvr.info':
+        final info = DvrInfoPayload.fromJson(payload);
+        final token = _token;
+        if (token == null) return;
+        _emit(
+          _state.copyWith(
+            dvr: DvrAccess(
+              playlist: mediaHttpBase(token.mediaUrl).resolve(info.playlistUrl),
+              token: token.accessToken,
+              from: DateTime.fromMillisecondsSinceEpoch(info.availableFrom),
+              to: DateTime.fromMillisecondsSinceEpoch(info.availableTo),
+            ),
+          ),
+        );
       case 'device.telemetry':
         _emit(
           _state.copyWith(telemetry: DeviceTelemetryPayload.fromJson(payload)),

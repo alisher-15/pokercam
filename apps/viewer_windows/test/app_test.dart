@@ -1,10 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared/shared.dart';
 import 'package:viewer_windows/src/app.dart';
 
 import 'fakes.dart';
+
+/// media-server's playlist: 30 s recorded, ending 1.5 s ago (the DVR's lag behind live).
+String dvrPlaylist() {
+  final end = DateTime.now().toUtc().subtract(
+    const Duration(milliseconds: 1500),
+  );
+  final start = end.subtract(const Duration(seconds: 30));
+  return [
+    '#EXTM3U',
+    '#EXT-X-VERSION:3',
+    '#EXT-X-TARGETDURATION:2',
+    '#EXT-X-MEDIA-SEQUENCE:500',
+    '#EXT-X-DISCONTINUITY-SEQUENCE:0',
+    for (var i = 0; i < 30; i++) ...[
+      '#EXT-X-PROGRAM-DATE-TIME:${start.add(Duration(seconds: i)).toIso8601String()}',
+      '#EXTINF:1.000,',
+      'r1/$i.ts',
+    ],
+  ].join('\n');
+}
 
 void main() {
   late FakeMediaServer server;
@@ -21,23 +42,36 @@ void main() {
 
   tearDown(() => server.stop());
 
-  Services services({String? activationError, int tokenStatus = 200}) =>
-      Services(
-        store: store,
-        log: JsonLog('viewer', sink: (_) {}),
-        subscriber: FakeSubscriber.new,
-        api: (url) => fakeBackend(
-          url,
-          mediaUrl: server.url,
-          activationError: activationError,
-          tokenStatus: tokenStatus,
-          sent: sent,
-        ),
-        connect: (url, id) => ControlSocket.connect(url, id, ping: null),
-        openWindow: (id) async => windows.add(id),
-        video: (stream) =>
-            ColoredBox(key: Key('video-${stream.id}'), color: Colors.black),
-      );
+  Services services({
+    String? activationError,
+    int activationStatus = 401,
+    int tokenStatus = 200,
+    FakePlayer? dvrPlayer,
+  }) => Services(
+    store: store,
+    log: JsonLog('viewer', sink: (_) {}),
+    subscriber: FakeSubscriber.new,
+    api: (url) => fakeBackend(
+      url,
+      mediaUrl: server.url,
+      activationError: activationError,
+      activationStatus: activationStatus,
+      tokenStatus: tokenStatus,
+      sent: sent,
+    ),
+    connect: (url, id) => ControlSocket.connect(url, id, ping: null),
+    openWindow: (id) async => windows.add(id),
+    video: (stream) =>
+        ColoredBox(key: Key('video-${stream.id}'), color: Colors.black),
+    dvrPlayer: (log) async => dvrPlayer ?? FakePlayer(),
+    dvrGet: (url, headers) async => dvrPlaylist(),
+  );
+
+  void dvrInfo() => server.push('dvr.info', {
+    'available_from': DateTime.now().millisecondsSinceEpoch - 31500,
+    'available_to': DateTime.now().millisecondsSinceEpoch - 1500,
+    'playlist_url': '/dvr/$tableId/index.m3u8',
+  });
 
   Future<void> pump(
     WidgetTester tester,
@@ -123,6 +157,18 @@ void main() {
     await pump(tester, services(activationError: 'invalid_activation_key'));
     await activate(tester);
     expect(find.text('Wrong activation key.'), findsOneWidget);
+    expect(store.value, isNull);
+  });
+
+  testWidgets('another server at the address (404) says so, with the port', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      services(activationError: 'not_found', activationStatus: 404),
+    );
+    await activate(tester);
+    expect(find.textContaining('no PokerCam server'), findsOneWidget);
     expect(store.value, isNull);
   });
 
@@ -219,6 +265,57 @@ void main() {
     await waitFor(tester, find.byKey(const Key('alert-journal')));
     expect(find.textContaining('badly overheated'), findsWidgets);
     expect(find.byType(SnackBar), findsOneWidget);
+    await close(tester);
+  });
+
+  testWidgets(
+    'the DVR: Space stops the picture, the keys move it, L is LIVE again (SPEC 8.2, 8.3)',
+    (tester) async {
+      store.value = connection;
+      final player = FakePlayer();
+      await pump(tester, services(dvrPlayer: player), initialTable: tableId);
+      await waitFor(tester, find.byKey(const Key('watch-live')));
+      dvrInfo();
+      await waitFor(tester, find.byKey(const Key('dvr-scale')));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await waitFor(tester, find.byKey(const Key('watch-behind')));
+      expect(player.calls.single, startsWith('open from=500 '));
+      expect(find.textContaining('Paused'), findsOneWidget);
+      expect(find.textContaining('−00:0'), findsOneWidget);
+      final opened = player.at;
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await waitFor(tester, find.textContaining('Paused'));
+      for (var i = 0; i < 20 && player.calls.length < 2; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      expect(player.at, opened - const Duration(seconds: 1));
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      for (var i = 0; i < 20 && player.calls.length < 3; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      expect(player.at, opened - const Duration(seconds: 11));
+      expect(find.byKey(const Key('dvr-live')), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyL);
+      await waitFor(tester, find.byKey(const Key('watch-live')));
+      expect(player.calls.last, 'stop');
+      await close(tester);
+    },
+  );
+
+  testWidgets('no DVR yet (a camera without H.264): the keys say why', (
+    tester,
+  ) async {
+    store.value = connection;
+    await pump(tester, services(), initialTable: tableId);
+    await waitFor(tester, find.byKey(const Key('watch-live')));
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await waitFor(tester, find.textContaining('No rewind yet'));
+    expect(find.byKey(const Key('watch-live')), findsOneWidget);
     await close(tester);
   });
 

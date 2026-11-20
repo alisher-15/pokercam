@@ -59,6 +59,33 @@ void main() {
     expect(await run, WatchPhase.stopped);
   });
 
+  test('dvr.info: the DVR playlist on media-server\'s HTTP address, with the table\'s token', () async {
+    final s = session();
+    final run = s.run();
+    await until(s, (st) => st.phase == WatchPhase.live);
+    expect(s.state.dvr, isNull);
+    server.push('dvr.info', {
+      'available_from': 1793500000000,
+      'available_to': 1793500600000,
+      'playlist_url': '/dvr/$tableId/index.m3u8',
+    });
+    await until(s, (st) => st.dvr != null);
+    final dvr = s.state.dvr!;
+    final port = Uri.parse(server.url).port;
+    expect(
+      dvr.playlist.toString(),
+      'http://127.0.0.1:$port/dvr/$tableId/index.m3u8',
+    );
+    expect(dvr.headers, {'Authorization': 'Bearer access'});
+    expect(dvr.to.difference(dvr.from), const Duration(minutes: 10));
+    expect(
+      mediaHttpBase('wss://cam.club.kz/ws').toString(),
+      'https://cam.club.kz/',
+    );
+    await s.stop();
+    await run;
+  });
+
   test('camera.set completes with the camera\'s answer; the new state comes in camera.state', () async {
     final s = session();
     final run = s.run();

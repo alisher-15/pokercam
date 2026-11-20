@@ -508,4 +508,25 @@ class AppLocalizationsRu extends AppLocalizations {
   String cameraApplied(int ms) {
     return 'применено за $ms мс';
   }
+
+  @override
+  String get dvrPaused => 'Пауза';
+
+  @override
+  String get dvrBackToLive => 'В LIVE';
+
+  @override
+  String get dvrKeys =>
+      '← → 1 с · ↑ ↓ 0,5 с · Shift+← −10 с · Пробел — пауза · L — LIVE';
+
+  @override
+  String get dvrUnavailable =>
+      'Перемотки пока нет: запись начинается, когда камера стола передаёт видео в H.264.';
+
+  @override
+  String get dvrFailed => 'Не удалось открыть запись. Попробуйте ещё раз.';
+
+  @override
+  String get errorNoServer =>
+      'По этому адресу нет сервера PokerCam. Проверьте адрес и порт: обычно http://адрес-сервера:8000.';
 }

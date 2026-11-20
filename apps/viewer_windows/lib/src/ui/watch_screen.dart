@@ -1,14 +1,19 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shared/shared.dart';
 
 import '../app.dart';
+import '../dvr/controller.dart';
 import '../session.dart';
 import '../store.dart';
 import 'control_panel.dart';
+import 'dvr_view.dart';
 import 'tables_screen.dart';
 
 /// Screen 3 of SPEC 8.1: the table's camera on the left, the control panel on the right.
@@ -25,9 +30,42 @@ class WatchCubit extends Cubit<WatchState> {
   StreamSubscription<WatchState>? _states;
   StreamSubscription<AlertEntry>? _alertSubscription;
   final _alerts = StreamController<AlertEntry>.broadcast();
+  Future<DvrController?>? _makingDvr;
+
+  /// The table's DVR, once someone has used it (its player is made then).
+  final dvr = ValueNotifier<DvrController?>(null);
 
   /// Each device.alert as it arrives, for the toast.
   Stream<AlertEntry> get alerts => _alerts.stream;
+
+  DvrSource _dvrSource(DvrAccess access) => DvrSource(
+    playlist: access.playlist,
+    headers: access.headers,
+    get: services.dvrGet,
+  );
+
+  /// The DVR for the keys: null while media-server has said nothing about one (no H.264 camera yet).
+  Future<DvrController?> useDvr() {
+    final existing = dvr.value;
+    if (existing != null) return Future.value(existing);
+    final access = state.dvr;
+    final session = _session;
+    if (access == null || session == null) return Future.value();
+    return _makingDvr ??= () async {
+      final player = await services.dvrPlayer(session.log);
+      if (isClosed) {
+        await player.dispose();
+        return null;
+      }
+      final controller = DvrController(
+        player: player,
+        source: _dvrSource(access),
+        log: session.log,
+      );
+      dvr.value = controller;
+      return controller;
+    }();
+  }
 
   Future<void> start() async {
     final api = services.api(connection.apiUrl);
@@ -41,6 +79,9 @@ class WatchCubit extends Cubit<WatchState> {
     );
     _session = session;
     _states = session.states.listen((s) {
+      final access = s.dvr;
+      // A reconnection brings a new token.
+      if (access != null) dvr.value?.source = _dvrSource(access);
       if (!isClosed) emit(s);
     });
     _alertSubscription = session.alerts.listen(_alerts.add);
@@ -75,6 +116,8 @@ class WatchCubit extends Cubit<WatchState> {
     await _alertSubscription?.cancel();
     await _alerts.close();
     await _session?.stop();
+    await (await _makingDvr)?.dispose();
+    dvr.dispose();
     _api?.close();
     return super.close();
   }
@@ -166,93 +209,188 @@ class _AlertToastsState extends State<_AlertToasts> {
   Widget build(BuildContext context) => widget.child;
 }
 
-class _VideoArea extends StatelessWidget {
+/// The camera live, with the DVR over it while behind (SPEC 8.2): the live video keeps playing underneath, so
+/// LIVE is back at once; going behind, the live frame stays frozen until the DVR shows its moment.
+class _VideoArea extends StatefulWidget {
   const _VideoArea();
 
   @override
+  State<_VideoArea> createState() => _VideoAreaState();
+}
+
+class _VideoAreaState extends State<_VideoArea> {
+  final _liveKey = GlobalKey();
+  ui.Image? _frozen;
+  DateTime? _toldUnavailable;
+
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_onKey);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onKey);
+    _frozen?.dispose();
+    super.dispose();
+  }
+
+  /// SPEC 8.3: the keys work while this window has the focus, but not in a text field.
+  bool _onKey(KeyEvent event) {
+    final action = dvrAction(
+      event,
+      shift: HardwareKeyboard.instance.isShiftPressed,
+    );
+    if (action == null || !mounted || focusInTextField()) return false;
+    unawaited(_run(action));
+    return true;
+  }
+
+  Future<void> _run(Future<void> Function(DvrController dvr) action) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final dvr = await context.read<WatchCubit>().useDvr();
+    if (dvr == null) {
+      final now = DateTime.now();
+      final told = _toldUnavailable;
+      if (told == null || now.difference(told) > const Duration(seconds: 5)) {
+        _toldUnavailable = now;
+        messenger.showSnackBar(SnackBar(content: Text(l10n.dvrUnavailable)));
+      }
+      return;
+    }
+    if (dvr.view.live) _freeze();
+    try {
+      await action(dvr);
+    } on Object {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.dvrFailed)));
+    }
+  }
+
+  /// The live frame as it is now, shown until the DVR player has its first frame.
+  void _freeze() {
+    final boundary = _liveKey.currentContext?.findRenderObject();
+    if (boundary is! RenderRepaintBoundary || !boundary.hasSize) return;
+    final ui.Image image;
+    try {
+      image = boundary.toImageSync();
+    } on Object {
+      // Not painted yet: nothing to freeze.
+      return;
+    }
+    setState(() {
+      _frozen?.dispose();
+      _frozen = image;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final cubit = context.read<WatchCubit>();
+    return ValueListenableBuilder<DvrController?>(
+      valueListenable: cubit.dvr,
+      // The stream only says when to draw again: the controller may have moved on before this subscribed.
+      builder: (context, dvr, _) => StreamBuilder<DvrView>(
+        stream: dvr?.views,
+        builder: (context, _) => BlocBuilder<WatchCubit, WatchState>(
+          builder: (context, state) =>
+              _build(context, state, dvr, dvr?.view ?? const DvrView()),
+        ),
+      ),
+    );
+  }
+
+  Widget _build(
+    BuildContext context,
+    WatchState state,
+    DvrController? dvr,
+    DvrView view,
+  ) {
     final l10n = AppLocalizations.of(context);
     final services = context.read<Services>();
-    return BlocBuilder<WatchCubit, WatchState>(
-      builder: (context, state) {
-        final stream = state.stream;
-        final blocked = state.phase == WatchPhase.blocked;
-        final grace = state.license == RoomLicenseStatus.GRACE
-            ? state.graceUntil
-            : null;
-        final message = switch (state.phase) {
-          WatchPhase.connecting => l10n.statusConnecting,
-          WatchPhase.reconnecting => l10n.statusReconnecting,
-          WatchPhase.blocked => l10n.errorLicense,
-          WatchPhase.roomFull => l10n.watchRoomFull,
-          WatchPhase.waiting || WatchPhase.stopped || WatchPhase.unauthorized =>
-            state.cameraOfflineSince != null
-                ? l10n.watchCameraOfflineSince(
-                    DateFormat.yMd(l10n.localeName)
-                        .add_Hm()
-                        .format(state.cameraOfflineSince!),
-                  )
-                : l10n.watchWaiting,
-          WatchPhase.live => null,
-        };
-        return ColoredBox(
-          color: Colors.black,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (stream != null && !blocked) services.video(stream),
-              if (message != null)
-                Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (state.phase == WatchPhase.connecting ||
-                          state.phase == WatchPhase.reconnecting)
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 12),
-                          child: CircularProgressIndicator(),
-                        ),
-                      Text(
-                        message,
-                        key: const Key('watch-message'),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ],
-                  ),
+    final stream = state.stream;
+    final blocked = state.phase == WatchPhase.blocked;
+    final behind = !view.live && dvr != null && !blocked;
+    final grace = state.license == RoomLicenseStatus.GRACE
+        ? state.graceUntil
+        : null;
+    final message = switch (state.phase) {
+      WatchPhase.connecting => l10n.statusConnecting,
+      WatchPhase.reconnecting => l10n.statusReconnecting,
+      WatchPhase.blocked => l10n.errorLicense,
+      WatchPhase.roomFull => l10n.watchRoomFull,
+      WatchPhase.waiting || WatchPhase.stopped || WatchPhase.unauthorized =>
+        state.cameraOfflineSince != null
+            ? l10n.watchCameraOfflineSince(
+                DateFormat.yMd(l10n.localeName)
+                    .add_Hm()
+                    .format(state.cameraOfflineSince!),
+              )
+            : l10n.watchWaiting,
+      WatchPhase.live => null,
+    };
+    return ColoredBox(
+      color: Colors.black,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (stream != null && !blocked)
+            RepaintBoundary(key: _liveKey, child: services.video(stream)),
+          // SPEC 8.5: the DVR stays available while the camera is offline, until the buffer runs out.
+          if (behind) ...[
+            Positioned.fill(
+              child: Opacity(
+                key: const Key('dvr-video'),
+                opacity: view.showing ? 1 : 0,
+                child: dvr.player.view(),
+              ),
+            ),
+            if (!view.showing && _frozen != null)
+              Positioned.fill(
+                child: RawImage(
+                  key: const Key('dvr-frozen'),
+                  image: _frozen,
+                  fit: BoxFit.fill,
                 ),
-              if (state.phase == WatchPhase.live)
-                Positioned(
-                  left: 12,
-                  top: 12,
-                  child: Container(
-                    key: const Key('watch-live'),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 3,
+              ),
+          ],
+          if (message != null && !behind)
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (state.phase == WatchPhase.connecting ||
+                      state.phase == WatchPhase.reconnecting)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: CircularProgressIndicator(),
                     ),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      l10n.liveBadge,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  Text(
+                    message,
+                    key: const Key('watch-message'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white, fontSize: 18),
                   ),
-                ),
-              if (grace != null && !blocked)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
+                ],
+              ),
+            ),
+          if (state.phase == WatchPhase.live || behind)
+            Positioned(
+              left: 12,
+              top: 12,
+              child: DvrIndicator(view: behind ? view : const DvrView()),
+            ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (grace != null && !blocked)
+                  Container(
                     key: const Key('watch-grace'),
                     color: Colors.amber.shade700,
                     padding: const EdgeInsets.all(10),
@@ -263,11 +401,16 @@ class _VideoArea extends StatelessWidget {
                       style: const TextStyle(color: Colors.black),
                     ),
                   ),
-                ),
-            ],
+                if (state.dvr != null && !blocked)
+                  DvrBar(
+                    view: behind ? view : DvrView(timeline: view.timeline),
+                    onLive: () => unawaited(dvr?.goLive()),
+                  ),
+              ],
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

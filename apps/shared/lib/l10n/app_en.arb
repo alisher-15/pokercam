@@ -532,5 +532,11 @@
         "type": "int"
       }
     }
-  }
+  },
+  "dvrPaused": "Paused",
+  "dvrBackToLive": "Back to LIVE",
+  "dvrKeys": "← → 1 s · ↑ ↓ 0.5 s · Shift+← −10 s · Space pause · L LIVE",
+  "dvrUnavailable": "No rewind yet: recording starts when the table camera sends H.264 video.",
+  "dvrFailed": "Could not open the recording. Try again.",
+  "errorNoServer": "There is no PokerCam server at this address. Check the address and the port: usually http://server-address:8000."
 }

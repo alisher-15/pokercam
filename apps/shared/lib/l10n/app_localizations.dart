@@ -961,6 +961,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'applied in {ms} ms'**
   String cameraApplied(int ms);
+
+  /// No description provided for @dvrPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get dvrPaused;
+
+  /// No description provided for @dvrBackToLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to LIVE'**
+  String get dvrBackToLive;
+
+  /// No description provided for @dvrKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'← → 1 s · ↑ ↓ 0.5 s · Shift+← −10 s · Space pause · L LIVE'**
+  String get dvrKeys;
+
+  /// No description provided for @dvrUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No rewind yet: recording starts when the table camera sends H.264 video.'**
+  String get dvrUnavailable;
+
+  /// No description provided for @dvrFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the recording. Try again.'**
+  String get dvrFailed;
+
+  /// No description provided for @errorNoServer.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no PokerCam server at this address. Check the address and the port: usually http://server-address:8000.'**
+  String get errorNoServer;
 }
 
 class _AppLocalizationsDelegate

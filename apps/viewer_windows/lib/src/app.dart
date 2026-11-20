@@ -2,10 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart' as http;
 import 'package:mediasfu_mediasoup_client/mediasfu_mediasoup_client.dart'
     show MediaStream;
 import 'package:shared/shared.dart';
 
+import 'dvr/media_kit_player.dart';
+import 'dvr/player.dart';
 import 'store.dart';
 import 'subscriber.dart';
 import 'ui/activation_screen.dart';
@@ -23,10 +26,14 @@ class Services {
     Future<ControlSocket> Function(String url, String tableId)? connect,
     Future<void> Function(String tableId)? openWindow,
     Widget Function(MediaStream stream)? video,
+    Future<DvrPlayer> Function(JsonLog log)? dvrPlayer,
+    Future<String> Function(Uri url, Map<String, String> headers)? dvrGet,
   }) : api = api ?? ApiClient.new,
        connect = connect ?? ControlSocket.connect,
        openWindow = openWindow ?? openTableWindow,
-       video = video ?? ((stream) => LiveVideo(stream: stream));
+       video = video ?? ((stream) => LiveVideo(stream: stream)),
+       dvrPlayer = dvrPlayer ?? MediaKitDvrPlayer.create,
+       dvrGet = dvrGet ?? getText;
 
   final ConnectionStore store;
   final JsonLog log;
@@ -41,6 +48,23 @@ class Services {
 
   /// The live picture of a stream; tests put a stand-in here (the real one needs the WebRTC plugin).
   final Widget Function(MediaStream stream) video;
+
+  /// The DVR's player (media_kit; a fake in tests), made when a table's DVR is first used.
+  final Future<DvrPlayer> Function(JsonLog log) dvrPlayer;
+
+  /// GETs a DVR playlist from media-server.
+  final Future<String> Function(Uri url, Map<String, String> headers) dvrGet;
+}
+
+/// A GET that must answer 200 with text.
+Future<String> getText(Uri url, Map<String, String> headers) async {
+  final response = await http
+      .get(url, headers: headers)
+      .timeout(const Duration(seconds: 10));
+  if (response.statusCode != 200) {
+    throw HttpException('HTTP ${response.statusCode}', uri: url);
+  }
+  return response.body;
 }
 
 /// Starts this app again for [tableId]: `viewer_windows.exe --table <id>`.
@@ -167,9 +191,16 @@ class ViewerApp extends StatelessWidget {
 }
 
 /// Text for an API failure on any screen (SPEC 8.5: the user sees what to do, not a stack trace).
-String apiErrorText(AppLocalizations l10n, Object error) {
+String apiErrorText(
+  AppLocalizations l10n,
+  Object error, {
+  bool activation = false,
+}) {
   if (error is! ApiException) return l10n.errorOther('$error');
   if (error.unreachable) return l10n.errorUnreachable;
+  // The backend always has the activation route: a 404 there is another server (media-server's port 3000, a
+  // web site) at that address.
+  if (activation && error.status == 404) return l10n.errorNoServer;
   return switch (error.code) {
     'invalid_activation_key' => l10n.activationErrorKey,
     'too_many_attempts' => l10n.errorTooMany,

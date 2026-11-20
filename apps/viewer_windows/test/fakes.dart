@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mediasfu_mediasoup_client/mediasfu_mediasoup_client.dart'
     show MediaStream, MediaStreamTrack;
 import 'package:shared/shared.dart';
+import 'package:viewer_windows/src/dvr/player.dart';
 import 'package:viewer_windows/src/store.dart';
 import 'package:viewer_windows/src/subscriber.dart';
 
@@ -280,6 +282,7 @@ ApiClient fakeBackend(
   required String mediaUrl,
   int tokenStatus = 200,
   String? activationError,
+  int activationStatus = 401,
   List<http.Request>? sent,
 }) => ApiClient(
   url,
@@ -293,7 +296,9 @@ ApiClient fakeBackend(
       status,
     );
     if (path.endsWith('/viewer/activate')) {
-      if (activationError != null) return error(401, activationError);
+      if (activationError != null) {
+        return error(activationStatus, activationError);
+      }
       return http.Response(
         jsonEncode({
           'refresh_token': 'refresh',
@@ -347,3 +352,57 @@ ApiClient fakeBackend(
     return http.Response('{}', 404);
   }),
 );
+
+/// Records what the controller asks; its position is where it was put.
+class FakePlayer implements DvrPlayer {
+  final calls = <String>[];
+  Uri? url;
+  Duration at = Duration.zero;
+  bool playing = false;
+  final endedController = StreamController<bool>.broadcast();
+
+  @override
+  Future<void> open(
+    Uri url,
+    Map<String, String> headers,
+    Duration start,
+  ) async {
+    this.url = url;
+    at = start;
+    playing = false;
+    calls.add('open ${url.query} ${start.inMilliseconds}');
+  }
+
+  @override
+  Future<void> seek(Duration position) async {
+    at = position;
+    calls.add('seek ${position.inMilliseconds}');
+  }
+
+  @override
+  Future<void> play() async {
+    playing = true;
+    calls.add('play');
+  }
+
+  @override
+  Future<void> pause() async {
+    playing = false;
+    calls.add('pause');
+  }
+
+  @override
+  Future<Duration> position() async => at;
+
+  @override
+  Stream<bool> get ended => endedController.stream;
+
+  @override
+  Future<void> stop() async => calls.add('stop');
+
+  @override
+  Future<void> dispose() => endedController.close();
+
+  @override
+  Widget view() => const SizedBox();
+}

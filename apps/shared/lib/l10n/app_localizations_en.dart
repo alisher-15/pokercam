@@ -509,4 +509,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String cameraApplied(int ms) {
     return 'applied in $ms ms';
   }
+
+  @override
+  String get dvrPaused => 'Paused';
+
+  @override
+  String get dvrBackToLive => 'Back to LIVE';
+
+  @override
+  String get dvrKeys =>
+      '← → 1 s · ↑ ↓ 0.5 s · Shift+← −10 s · Space pause · L LIVE';
+
+  @override
+  String get dvrUnavailable =>
+      'No rewind yet: recording starts when the table camera sends H.264 video.';
+
+  @override
+  String get dvrFailed => 'Could not open the recording. Try again.';
+
+  @override
+  String get errorNoServer =>
+      'There is no PokerCam server at this address. Check the address and the port: usually http://server-address:8000.';
 }
