@@ -18,7 +18,7 @@
   "pairingErrorOther": "Не удалось привязать ({code}).",
   "pairingQrNotOurs": "Это не QR-код привязки камеры стола.",
   "pairingReplaced": "Этот телефон заменён другим или отвязан. Привяжите его снова.",
-  "preflightTitle": "Проверка перед трансляцией",
+  "preflightTitle": "Перед трансляцией",
   "preflightCamera": "Параметры камеры",
   "preflightVideo": "Видео",
   "preflightSystem": "Телефон",

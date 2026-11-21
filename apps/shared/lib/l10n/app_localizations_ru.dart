@@ -72,7 +72,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Этот телефон заменён другим или отвязан. Привяжите его снова.';
 
   @override
-  String get preflightTitle => 'Проверка перед трансляцией';
+  String get preflightTitle => 'Перед трансляцией';
 
   @override
   String get preflightCamera => 'Параметры камеры';
