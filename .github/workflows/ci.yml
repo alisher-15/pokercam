@@ -132,16 +132,27 @@ jobs:
       - run: flutter build apk --release
         working-directory: apps/camera_android
       # A direct link for installing on a phone or tablet (an artifact zip does not download from every mobile browser).
+      - run: cp apps/camera_android/build/app/outputs/flutter-apk/app-release.apk pokercam-camera.apk
+      # Also on the run's page, whatever happens to the release below.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pokercam-camera-apk
+          path: pokercam-camera.apk
+      # The file in the existing release is replaced, never the release deleted first: when GitHub refuses to
+      # create one (it did, 403), the link must keep working.
       - name: Publish to the camera-apk pre-release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          cp apps/camera_android/build/app/outputs/flutter-apk/app-release.apk pokercam-camera.apk
-          gh release delete camera-apk --yes --cleanup-tag || true
-          gh release create camera-apk pokercam-camera.apk --prerelease --target "$GITHUB_SHA" \
-            --title "PokerCam — приложение камеры (APK)" \
-            --notes "Приложение камеры стола из ветки ${GITHUB_REF_NAME}, коммит $GITHUB_SHA. Скачайте pokercam-camera.apk на телефоне или планшете и установите."
+          notes="Приложение камеры стола из ветки ${GITHUB_REF_NAME}, коммит $GITHUB_SHA. Скачайте pokercam-camera.apk на телефоне или планшете и установите."
+          if gh release view camera-apk > /dev/null 2>&1; then
+            gh release upload camera-apk pokercam-camera.apk --clobber
+            gh release edit camera-apk --notes "$notes"
+          else
+            gh release create camera-apk pokercam-camera.apk --prerelease --target "$GITHUB_SHA" \
+              --title "PokerCam — приложение камеры (APK)" --notes "$notes"
+          fi
 
   android-e2e:
     name: Camera app on an emulator (stage 5)
@@ -253,16 +264,28 @@ jobs:
       - run: flutter build windows --release
         working-directory: apps/viewer_windows
       # Until the installer (stage 8): the release folder as a zip to unpack and run viewer_windows.exe.
+      - run: Compress-Archive -Path apps/viewer_windows/build/windows/x64/runner/Release/* -DestinationPath pokercam-viewer-windows.zip
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pokercam-viewer-windows
+          path: pokercam-viewer-windows.zip
+      # As for the APK: the file is replaced in the existing release, which is never deleted first.
       - name: Publish to the viewer-windows pre-release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          Compress-Archive -Path apps/viewer_windows/build/windows/x64/runner/Release/* -DestinationPath pokercam-viewer-windows.zip
-          gh release delete viewer-windows --yes --cleanup-tag 2>$null
-          gh release create viewer-windows pokercam-viewer-windows.zip --prerelease --target "$env:GITHUB_SHA" `
-            --title "PokerCam — программа для ПК (Windows)" `
-            --notes "Программа для компьютера клуба из ветки $env:GITHUB_REF_NAME, коммит $env:GITHUB_SHA. Распакуйте pokercam-viewer-windows.zip в любую папку и запустите viewer_windows.exe."
+          $notes = "Программа для компьютера клуба из ветки $env:GITHUB_REF_NAME, коммит $env:GITHUB_SHA. Распакуйте pokercam-viewer-windows.zip в любую папку и запустите viewer_windows.exe."
+          gh release view viewer-windows *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload viewer-windows pokercam-viewer-windows.zip --clobber
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+            gh release edit viewer-windows --notes $notes
+          } else {
+            gh release create viewer-windows pokercam-viewer-windows.zip --prerelease --target "$env:GITHUB_SHA" `
+              --title "PokerCam — программа для ПК (Windows)" --notes $notes
+          }
+          if ($LASTEXITCODE -ne 0) { exit 1 }
 
   # Stages 6 and 7 (SPEC 12: the camera is controlled from the PC; the DVR on Windows): the real Windows app
   # against backend and media-server running on the same Windows machine (PostgreSQL is on the runner, FFmpeg
