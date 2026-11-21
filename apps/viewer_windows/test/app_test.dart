@@ -157,7 +157,7 @@ void main() {
       // SPEC 10.1: the club's colors from GET /brand replace the build's.
       await tester.pumpAndSettle();
       final scheme = Theme.of(tester.element(find.text('Table 1'))).colorScheme;
-      expect(scheme.primary, const Color(0xFF112233));
+      expect(scheme.primaryContainer, const Color(0xFF112233));
       expect(find.byKey(const Key('brand-logo')), findsOneWidget);
     },
   );

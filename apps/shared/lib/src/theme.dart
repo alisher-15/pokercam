@@ -10,16 +10,26 @@ Color parseColor(String hex) {
 }
 
 /// Dark theme of both apps, built from a brand's colors (brand.json or GET /api/v1/brand).
+///
+/// A brand's primary and secondary are usually dark (a logo's colors), and in a dark theme Material paints
+/// text and text buttons in `primary`: unreadable on the dark background. So `primary` is a light tone of the
+/// brand's hue (Material's own scheme from it), readable on the background, and the brand's own colors go
+/// where they fill a surface: `primaryContainer` and `secondaryContainer`, with a readable text color on them.
 ThemeData buildTheme(BrandColors colors) {
   final primary = parseColor(colors.primary);
+  final secondary = parseColor(colors.secondary);
+  final accent = parseColor(colors.accent);
   final scheme =
       ColorScheme.fromSeed(
         seedColor: primary,
         brightness: Brightness.dark,
       ).copyWith(
-        primary: primary,
-        secondary: parseColor(colors.secondary),
-        tertiary: parseColor(colors.accent),
+        primaryContainer: primary,
+        onPrimaryContainer: readableOn(primary),
+        secondaryContainer: secondary,
+        onSecondaryContainer: readableOn(secondary),
+        tertiary: accent,
+        onTertiary: readableOn(accent),
         surface: parseColor(colors.background),
       );
   return ThemeData(
@@ -27,6 +37,20 @@ ThemeData buildTheme(BrandColors colors) {
     scaffoldBackgroundColor: scheme.surface,
   );
 }
+
+/// WCAG contrast ratio of two colors: 1 (same) to 21 (black on white); text wants 4.5 or more.
+double contrastRatio(Color a, Color b) {
+  final la = a.computeLuminance();
+  final lb = b.computeLuminance();
+  return ((la > lb ? la : lb) + 0.05) / ((la > lb ? lb : la) + 0.05);
+}
+
+/// Black or white, whichever reads better on [background].
+Color readableOn(Color background) =>
+    contrastRatio(Colors.white, background) >=
+        contrastRatio(Colors.black, background)
+    ? Colors.white
+    : Colors.black;
 
 /// Neutral colors: a build without a brand (BuildBrand.colors has the same defaults).
 final neutralColors = BrandColors(
