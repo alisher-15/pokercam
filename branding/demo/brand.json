@@ -1,0 +1,18 @@
+{
+  "app_name": "TableGuard",
+  "android_application_id": "com.tableguard.camera",
+  "windows_app_id": "com.tableguard.viewer",
+  "colors": {
+    "primary": "#11496B",
+    "secondary": "#1E2A33",
+    "background": "#0B141A",
+    "accent": "#F2A541"
+  },
+  "logo": "logo.png",
+  "icon": "icon.png",
+  "seller_contacts": {
+    "phone": "+7 700 000 00 00",
+    "telegram": "@tableguard_support",
+    "note": "Test brand for builds (stage 8)"
+  }
+}

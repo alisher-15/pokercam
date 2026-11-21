@@ -21,7 +21,7 @@
 | 5. Android | готов (ветка `stage-5/android`): эмулятор в CI и планшет на пилотном сервере; ждёт приёмки на эталонном телефоне — 1080p30 4 часа, привязка по QR, Wi-Fi 30 с |
 | 6. Windows: live | готов (ветка `stage-6/windows-live`): сквозной прогон на Windows в CI зелёный; ждёт проверки на ПК клуба с телефоном |
 | 7. Windows: DVR | готов (ветка `stage-7/windows-dvr`): точность перемотки и сквозной прогон на Windows в CI; ждёт проверки на ПК клуба с телефоном на H.264 и 8-часового прогона памяти |
-| 8. White-label | не начат |
+| 8. White-label | готов (ветка `stage-8/white-label`): CI собирает APK и установщик обоих брендов, проверяет их имена и ставит установщик на Windows; ждёт приёмки |
 | 9. Приёмка | не начат |
 
 ## Запуск для разработки
@@ -47,6 +47,8 @@ make load-test LOAD_MINUTES=60  # после make dev: нагрузка, пам�
 Без телефона и Windows-клиента поток проверяется ботами из `tools/` (headless Chromium с тестовой камерой 1080p30 и mediasoup-client): `make acceptance` создаёт клиента, привязывает фейковую камеру к его столу и подключает зрителей; один сверх лимита должен получить `room_full`. Вручную: `cd tools && node fake_camera/index.ts --key <ключ клуба>` и `node fake_viewer/index.ts --key <ключ клуба> --count 5`. Ботам нужен Chromium Playwright: `cd tools && npx playwright install chromium`. Фейковая камера перепривязывает стол, поэтому запускайте её на тестовом клиенте.
 
 DVR (перемотка на 10 минут) пишет media-server: FFmpeg складывает сегменты в tmpfs `/dvr` контейнера (`DVR_TMPFS_SIZE`, ≈300 МБ на стол), плейлист отдаётся по `GET /dvr/{table_id}/index.m3u8` на порту media-server с заголовком `Authorization: Bearer <токен зрителя этого стола>`. Нагрузочный тест: `make load-test LOAD_TABLES=1 LOAD_VIEWERS=1 LOAD_MINUTES=720` — пилотный 12-часовой прогон (SPEC 7.4); результаты (CSV, график памяти и CPU, итог) — в `tools/load_test/results/`.
+
+Бренды (SPEC 10.1): папка `branding/<бренд>/` — `brand.json` (название, applicationId Android, ID программы Windows, цвета, контакты продавца), `logo.png` и `icon.png` (квадрат от 512 px). `make build BRAND=demo` собирает в `build/brand/demo/` APK камеры, а на Windows ещё и установщик программы для ПК (нужен Inno Setup 6). `make brand BRAND=demo` только подставляет бренд в исходники (иконки, логотип, `brand.h`) для `flutter run`; `make brand` возвращает бренд по умолчанию. Цвета, логотип и контакты, заданные бренду в админке, приложения берут из `GET /brand` без пересборки. Новый бренд — копия `branding/demo` со своими значениями: тесты `contracts` и `make test-tools` проверяют каждую папку.
 
 После изменения схем в `contracts/` — `make codegen`, после изменения строк в `apps/shared/lib/l10n/*.arb` — `make l10n`. `make check-generated` проверяет, что сгенерированные файлы совпадают с закоммиченными (то же проверяет CI).
 

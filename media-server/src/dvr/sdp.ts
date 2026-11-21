@@ -15,7 +15,7 @@ export function ffmpegSdp(rtpParameters: types.RtpParameters, rtpPort: number, r
   const lines = [
     "v=0",
     "o=- 0 0 IN IP4 127.0.0.1",
-    "s=PokerCam DVR",
+    "s=DVR",
     "c=IN IP4 127.0.0.1",
     "t=0 0",
     `m=video ${String(rtpPort)} RTP/AVP ${String(codec.payloadType)}`,

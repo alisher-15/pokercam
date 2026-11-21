@@ -154,6 +154,11 @@ void main() {
       expect(find.text('Table 1'), findsOneWidget);
       expect(find.text('camera on air'), findsOneWidget);
       expect(find.textContaining('camera last seen'), findsOneWidget);
+      // SPEC 10.1: the club's colors from GET /brand replace the build's.
+      await tester.pumpAndSettle();
+      final scheme = Theme.of(tester.element(find.text('Table 1'))).colorScheme;
+      expect(scheme.primary, const Color(0xFF112233));
+      expect(find.byKey(const Key('brand-logo')), findsOneWidget);
     },
   );
 
@@ -172,7 +177,7 @@ void main() {
       services(activationError: 'not_found', activationStatus: 404),
     );
     await activate(tester);
-    expect(find.textContaining('no PokerCam server'), findsOneWidget);
+    expect(find.textContaining('No camera server answers'), findsOneWidget);
     expect(store.value, isNull);
   });
 

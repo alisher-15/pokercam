@@ -74,7 +74,9 @@ class PairingCubit extends Cubit<PairingState> {
         PairingState(
           error: _error(e),
           errorCode: e.code,
-          sellerContacts: e.sellerContacts,
+          sellerContacts: _error(e) == PairingError.license
+              ? e.sellerContacts ?? BuildBrand.sellerContacts
+              : null,
         ),
       );
     } on Object catch (e) {
@@ -139,7 +141,15 @@ class _PairingScreenState extends State<PairingScreen> {
       create: (context) =>
           PairingCubit(context.read<Services>(), context.read<AppCubit>()),
       child: Scaffold(
-        appBar: AppBar(title: Text(l10n.pairingTitle)),
+        appBar: AppBar(
+          title: Text(l10n.pairingTitle),
+          actions: const [
+            Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: BrandLogo(height: 32),
+            ),
+          ],
+        ),
         body: BlocBuilder<PairingCubit, PairingState>(
           builder: (context, state) {
             final cubit = context.read<PairingCubit>();

@@ -46,3 +46,6 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# The brand of the last build (tools/brand/brand.ts)
+/windows/runner/brand.h

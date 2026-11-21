@@ -23,11 +23,7 @@ List<(String, String)> sellerContactLines(
 
 /// SPEC 8.4: whom the club calls when its license is in grace or blocked. Text can be selected and copied.
 class SellerContactsView extends StatelessWidget {
-  const SellerContactsView({
-    super.key,
-    required this.contacts,
-    this.color,
-  });
+  const SellerContactsView({super.key, required this.contacts, this.color});
 
   final SellerContacts contacts;
 

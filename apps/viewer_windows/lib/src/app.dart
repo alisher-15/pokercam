@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -102,12 +103,16 @@ class AppCubit extends Cubit<AppState> {
   /// The table this window was opened for (`--table`).
   final String? initialTable;
 
+  /// The brand: the build's, then the club's from the server (SPEC 10.1: no rebuild for small changes).
+  final brand = ValueNotifier(BrandLook.ofBuild());
+
   Future<void> start() async {
     final connection = await services.store.load();
     if (connection == null) {
       emit(const AppState(Screen.activation));
       return;
     }
+    unawaited(_refreshBrand(connection));
     if (initialTable != null) {
       final table = await _findTable(connection, initialTable!);
       if (table != null) {
@@ -139,6 +144,30 @@ class AppCubit extends Cubit<AppState> {
       'client_id': connection.clientId,
     });
     emit(AppState(Screen.tables, connection: connection));
+    unawaited(_refreshBrand(connection));
+  }
+
+  Future<void> _refreshBrand(Connection connection) async {
+    final api = services.api(connection.apiUrl);
+    try {
+      final token = await api.token(connection.refreshToken);
+      final look = BrandLook.ofServer(
+        await api.brand(token.accessToken),
+        connection.apiUrl,
+      );
+      if (!isClosed) brand.value = look;
+    } on Object catch (e) {
+      // Blocked or offline: the build's brand stays.
+      services.log.warn('brand failed', {'error': '$e'});
+    } finally {
+      api.close();
+    }
+  }
+
+  @override
+  Future<void> close() {
+    brand.dispose();
+    return super.close();
   }
 
   void openTable(TableInfo table) =>
@@ -165,27 +194,35 @@ class ViewerApp extends StatelessWidget {
     value: services,
     child: BlocProvider(
       create: (_) => AppCubit(services, initialTable: initialTable)..start(),
-      child: MaterialApp(
-        onGenerateTitle: (context) =>
-            AppLocalizations.of(context).viewerAppTitle,
-        theme: buildTheme(neutralColors),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: BlocBuilder<AppCubit, AppState>(
-          builder: (context, state) => switch (state.screen) {
-            Screen.loading => const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            ),
-            Screen.activation => ActivationScreen(revoked: state.revoked),
-            Screen.tables => TablesScreen(connection: state.connection!),
-            Screen.watch => WatchScreen(
-              key: ValueKey(state.table!.id),
-              connection: state.connection!,
-              table: state.table!,
-            ),
-          },
+      child: Builder(
+        builder: (context) => ValueListenableBuilder(
+          valueListenable: context.read<AppCubit>().brand,
+          builder: (context, look, _) => _app(look),
         ),
       ),
+    ),
+  );
+
+  Widget _app(BrandLook look) => MaterialApp(
+    onGenerateTitle: (context) => BuildBrand.appName.isNotEmpty
+        ? BuildBrand.appName
+        : AppLocalizations.of(context).viewerAppTitle,
+    theme: buildTheme(look.colors),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: BlocBuilder<AppCubit, AppState>(
+      builder: (context, state) => switch (state.screen) {
+        Screen.loading => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+        Screen.activation => ActivationScreen(revoked: state.revoked),
+        Screen.tables => TablesScreen(connection: state.connection!),
+        Screen.watch => WatchScreen(
+          key: ValueKey(state.table!.id),
+          connection: state.connection!,
+          table: state.table!,
+        ),
+      },
     ),
   );
 }

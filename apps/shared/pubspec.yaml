@@ -24,3 +24,6 @@ dev_dependencies:
 
 flutter:
   generate: true
+  # The build's brand logo: tools/brand/brand.ts copies branding/<brand>/logo.png here (default committed).
+  assets:
+    - assets/brand/

@@ -189,7 +189,7 @@ describe("FFmpeg's SDP input", () => {
       [
         "v=0",
         "o=- 0 0 IN IP4 127.0.0.1",
-        "s=PokerCam DVR",
+        "s=DVR",
         "c=IN IP4 127.0.0.1",
         "t=0 0",
         "m=video 50000 RTP/AVP 102",

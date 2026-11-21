@@ -110,8 +110,10 @@ jobs:
       - run: make lint-apps
       - run: make test-apps
 
+  # Stage 8 (SPEC 10.1): both brands of branding/ with one command each (tools/brand/brand.ts), each APK
+  # checked for its own package and name; the default brand's goes to the camera-apk pre-release.
   build-android:
-    name: Build Android APK
+    name: Build Android APKs (both brands)
     if: github.event_name != 'push' || github.ref == 'refs/heads/main'
     needs: apps
     runs-on: ubuntu-latest
@@ -123,35 +125,52 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-      # Release mode (AOT): what a phone runs, at the speed it will run. Signed with the debug key until stage 8.
-      - run: flutter build apk --release
-        working-directory: apps/camera_android
-      # A direct link for installing on a phone or tablet (an artifact zip does not download from every mobile browser).
-      - run: cp apps/camera_android/build/app/outputs/flutter-apk/app-release.apk pokercam-camera.apk
+      # Release mode (AOT): what a phone runs, at the speed it will run. Signed with the debug key for now.
+      - name: make build BRAND=demo, then BRAND=default
+        run: |
+          for brand in demo default; do make build BRAND=$brand; done
+      - name: Each APK is its brand's (package, name)
+        run: |
+          aapt=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)aapt
+          for brand in demo default; do
+            apk=$(ls build/brand/$brand/*-camera.apk)
+            badging=$("$aapt" dump badging "$apk")
+            want_id=$(jq -r .android_application_id branding/$brand/brand.json)
+            want_name=$(jq -r .app_name branding/$brand/brand.json)
+            echo "$brand: $(echo "$badging" | grep -E "^package:|^application-label:")"
+            echo "$badging" | grep -q "^package: name='$want_id'" || { echo "::error::$apk is not $want_id"; exit 1; }
+            echo "$badging" | grep -q "^application-label:'$want_name'" || { echo "::error::$apk is not named $want_name"; exit 1; }
+          done
+      - run: cp build/brand/default/pokercam-camera.apk pokercam-camera.apk
       # Also on the run's page, whatever happens to the release below.
       - uses: actions/upload-artifact@v7
         with:
-          name: pokercam-camera-apk
-          path: pokercam-camera.apk
-      # The file in the existing release is replaced, never the release deleted first: when GitHub refuses to
-      # create one (it did, 403), the link must keep working.
+          name: camera-apks
+          path: build/brand/*/*-camera.apk
+      # A direct link for installing on a phone or tablet (an artifact zip does not download from every mobile
+      # browser). The file in the existing release is replaced, never the release deleted first: when GitHub
+      # refuses to create one (it did, 403), the link must keep working.
       - name: Publish to the camera-apk pre-release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
+          name=$(jq -r .app_name branding/default/brand.json)
           notes="Приложение камеры стола из ветки ${GITHUB_REF_NAME}, коммит $GITHUB_SHA. Скачайте pokercam-camera.apk на телефоне или планшете и установите."
           if gh release view camera-apk > /dev/null 2>&1; then
             gh release upload camera-apk pokercam-camera.apk --clobber
             gh release edit camera-apk --notes "$notes"
           else
             gh release create camera-apk pokercam-camera.apk --prerelease --target "$GITHUB_SHA" \
-              --title "PokerCam — приложение камеры (APK)" --notes "$notes"
+              --title "$name — приложение камеры (APK)" --notes "$notes"
           fi
 
   android-e2e:
@@ -244,8 +263,11 @@ jobs:
           test "$before" = "$(sudo grep '^JWT_PRIVATE_KEY=' /opt/pokercam/.env)"
           curl -fsS http://localhost:8000/health
 
+  # Stage 8 (SPEC 8.6, 10.1): the program and its Inno Setup installer for both brands, each checked for its
+  # names and installed, started and uninstalled without a window or administrator rights; the default
+  # brand's installer (and the zip) goes to the viewer-windows pre-release.
   build-windows:
-    name: Build Windows app
+    name: Build Windows installers (both brands)
     if: github.event_name != 'push' || github.ref == 'refs/heads/main'
     needs: apps
     runs-on: windows-latest
@@ -256,34 +278,73 @@ jobs:
         shell: pwsh
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-      - run: flutter build windows --release
-        working-directory: apps/viewer_windows
-      # Until the installer (stage 8): the release folder as a zip to unpack and run viewer_windows.exe.
-      - run: Compress-Archive -Path apps/viewer_windows/build/windows/x64/runner/Release/* -DestinationPath pokercam-viewer-windows.zip
+      - name: Inno Setup
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+      - name: Installers, demo first, then default
+        run: |
+          foreach ($brand in 'demo', 'default') {
+            $name = (Get-Content "branding/$brand/brand.json" | ConvertFrom-Json).app_name
+            Push-Location tools; node brand/brand.ts windows $brand; $built = $LASTEXITCODE; Pop-Location
+            if ($built -ne 0) { exit 1 }
+            $exe = "apps/viewer_windows/build/windows/x64/runner/Release/viewer_windows.exe"
+            $product = (Get-Item $exe).VersionInfo.ProductName
+            Write-Output "$brand : ProductName '$product'"
+            if ($product -ne $name) { Write-Output "::error::$exe is '$product', not '$name'"; exit 1 }
+          }
+      - name: Each installer installs, starts and uninstalls for the current user
+        run: |
+          foreach ($brand in 'demo', 'default') {
+            $setup = Get-ChildItem "build/brand/$brand/*-setup.exe" | Select-Object -First 1
+            $dir = Join-Path $env:RUNNER_TEMP "install-$brand"
+            $run = Start-Process $setup.FullName -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER', "/DIR=$dir" -Wait -PassThru
+            if ($run.ExitCode -ne 0) { Write-Output "::error::$($setup.Name) exited $($run.ExitCode)"; exit 1 }
+            foreach ($file in 'viewer_windows.exe', 'flutter_windows.dll', 'vcruntime140.dll', 'msvcp140.dll') {
+              if (-not (Test-Path (Join-Path $dir $file))) { Write-Output "::error::$brand installed no $file"; exit 1 }
+            }
+            $app = Start-Process (Join-Path $dir 'viewer_windows.exe') -PassThru
+            Start-Sleep -Seconds 15
+            if ($app.HasExited) { Write-Output "::error::$brand's program exited with $($app.ExitCode)"; exit 1 }
+            Write-Output "$brand : $($setup.Name) installed in $dir, the program runs ($([math]::Round($setup.Length / 1MB)) MB)"
+            Stop-Process -Id $app.Id -Force
+            Start-Sleep -Seconds 2
+            Start-Process (Join-Path $dir 'unins000.exe') -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait
+            for ($i = 0; $i -lt 30 -and (Test-Path (Join-Path $dir 'viewer_windows.exe')); $i++) { Start-Sleep -Seconds 1 }
+            if (Test-Path (Join-Path $dir 'viewer_windows.exe')) { Write-Output "::error::$brand did not uninstall"; exit 1 }
+          }
+      # The zip as before, for unpacking without installing: the default brand's (built last).
+      - run: |
+          Compress-Archive -Path apps/viewer_windows/build/windows/x64/runner/Release/* -DestinationPath pokercam-viewer-windows.zip
+          Copy-Item build/brand/default/pokercam-setup.exe pokercam-setup.exe
       - uses: actions/upload-artifact@v7
         with:
-          name: pokercam-viewer-windows
-          path: pokercam-viewer-windows.zip
-      # As for the APK: the file is replaced in the existing release, which is never deleted first.
+          name: windows-installers
+          path: |
+            build/brand/*/*-setup.exe
+            pokercam-viewer-windows.zip
       - name: Publish to the viewer-windows pre-release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          $notes = "Программа для компьютера клуба из ветки $env:GITHUB_REF_NAME, коммит $env:GITHUB_SHA. Распакуйте pokercam-viewer-windows.zip в любую папку и запустите viewer_windows.exe."
+          $name = (Get-Content branding/default/brand.json | ConvertFrom-Json).app_name
+          $notes = "Программа для компьютера клуба из ветки $env:GITHUB_REF_NAME, коммит $env:GITHUB_SHA. Установщик: pokercam-setup.exe (без прав администратора). Без установки: распакуйте pokercam-viewer-windows.zip и запустите viewer_windows.exe."
           gh release view viewer-windows *> $null
           if ($LASTEXITCODE -eq 0) {
-            gh release upload viewer-windows pokercam-viewer-windows.zip --clobber
+            gh release upload viewer-windows pokercam-setup.exe pokercam-viewer-windows.zip --clobber
             if ($LASTEXITCODE -ne 0) { exit 1 }
             gh release edit viewer-windows --notes $notes
           } else {
-            gh release create viewer-windows pokercam-viewer-windows.zip --prerelease --target "$env:GITHUB_SHA" `
-              --title "PokerCam — программа для ПК (Windows)" --notes $notes
+            gh release create viewer-windows pokercam-setup.exe pokercam-viewer-windows.zip --prerelease --target "$env:GITHUB_SHA" `
+              --title "$name — программа для ПК (Windows)" --notes $notes
           }
           if ($LASTEXITCODE -ne 0) { exit 1 }
 

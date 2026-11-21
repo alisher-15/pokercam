@@ -28,7 +28,7 @@ ThemeData buildTheme(BrandColors colors) {
   );
 }
 
-/// Neutral colors used until the build injects a brand (stage 8).
+/// Neutral colors: a build without a brand (BuildBrand.colors has the same defaults).
 final neutralColors = BrandColors(
   primary: '#3F6E8C',
   secondary: '#2B3138',

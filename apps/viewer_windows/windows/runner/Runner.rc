@@ -3,6 +3,15 @@
 #pragma code_page(65001)
 #include "resource.h"
 
+// The brand (SPEC 10.1): tools/brand/brand.ts writes brand.h (UTF-8) before a branded build; without it the
+// program has neutral names.
+#ifdef HAVE_BRAND_H
+#include "brand.h"
+#endif
+#ifndef BRAND_APP_NAME
+#define BRAND_APP_NAME "Viewer"
+#endif
+
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -89,13 +98,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "viewer_windows" "\0"
+            VALUE "CompanyName", BRAND_APP_NAME "\0"
+            VALUE "FileDescription", BRAND_APP_NAME "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "viewer_windows" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
+            VALUE "LegalCopyright", BRAND_APP_NAME "\0"
             VALUE "OriginalFilename", "viewer_windows.exe" "\0"
-            VALUE "ProductName", "viewer_windows" "\0"
+            VALUE "ProductName", BRAND_APP_NAME "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

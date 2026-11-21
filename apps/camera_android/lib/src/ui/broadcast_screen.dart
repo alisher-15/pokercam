@@ -145,7 +145,7 @@ class BroadcastScreen extends StatelessWidget {
         _Banner(
           l10n.bannerLicenseBlocked,
           critical: true,
-          contacts: state.sellerContacts,
+          contacts: state.sellerContacts ?? BuildBrand.sellerContacts,
         ),
       if (state.license == RoomLicenseStatus.GRACE && state.graceUntil != null)
         _Banner(l10n.bannerLicenseGrace(date.format(state.graceUntil!))),

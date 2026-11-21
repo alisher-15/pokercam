@@ -94,7 +94,16 @@ class _ActivationScreenState extends State<ActivationScreen> {
       create: (context) =>
           ActivationCubit(context.read<Services>(), context.read<AppCubit>()),
       child: Scaffold(
-        appBar: AppBar(title: Text(l10n.activationTitle)),
+        appBar: AppBar(
+          title: Text(l10n.activationTitle),
+          // The build's logo: the server's is not known before activation.
+          actions: const [
+            Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: BrandLogo(height: 36),
+            ),
+          ],
+        ),
         body: BlocBuilder<ActivationCubit, ActivationState>(
           builder: (context, state) => Center(
             child: ConstrainedBox(

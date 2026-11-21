@@ -8,7 +8,7 @@ import qrcode from "qrcode-generator";
 
 const TEXT = {
   ru: {
-    title: "PokerCam — просмотр",
+    title: "Просмотр столов",
     setupTitle: "Подключение компьютера",
     setupServer: "Адрес сервера",
     setupKey: "Ключ активации клиента",
@@ -90,7 +90,7 @@ const TEXT = {
     errGeneric: "Ошибка: {code}",
   },
   en: {
-    title: "PokerCam — viewer",
+    title: "Table viewer",
     setupTitle: "Connect this computer",
     setupServer: "Server address",
     setupKey: "Client activation key",

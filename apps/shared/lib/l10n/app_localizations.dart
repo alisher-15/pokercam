@@ -197,7 +197,7 @@ abstract class AppLocalizations {
   /// A scanned QR code that is not ours.
   ///
   /// In en, this message translates to:
-  /// **'This is not a PokerCam pairing code.'**
+  /// **'This is not a table camera pairing code.'**
   String get pairingQrNotOurs;
 
   /// Shown on the pairing screen after the server dropped this phone (SPEC 6.4).
@@ -995,7 +995,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorNoServer.
   ///
   /// In en, this message translates to:
-  /// **'There is no PokerCam server at this address. Check the address and the port: usually http://server-address:8000.'**
+  /// **'No camera server answers at this address. Check the address and the port: usually http://server-address:8000.'**
   String get errorNoServer;
 
   /// No description provided for @sellerContactsTitle.

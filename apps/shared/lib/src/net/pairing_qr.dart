@@ -12,7 +12,7 @@ class PairingQr {
 
   static bool isCode(String text) => _code.hasMatch(text);
 
-  /// The QR text, or null when it is not a PokerCam pairing code.
+  /// The QR text, or null when it is not a pairing code of this system.
   static PairingQr? parse(String text) {
     try {
       final json = jsonDecode(text);

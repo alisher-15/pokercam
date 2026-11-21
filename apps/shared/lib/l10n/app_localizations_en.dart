@@ -65,7 +65,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get pairingQrNotOurs => 'This is not a PokerCam pairing code.';
+  String get pairingQrNotOurs => 'This is not a table camera pairing code.';
 
   @override
   String get pairingReplaced =>
@@ -529,7 +529,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorNoServer =>
-      'There is no PokerCam server at this address. Check the address and the port: usually http://server-address:8000.';
+      'No camera server answers at this address. Check the address and the port: usually http://server-address:8000.';
 
   @override
   String get sellerContactsTitle => 'Seller contacts';

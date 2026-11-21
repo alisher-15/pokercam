@@ -20,7 +20,7 @@ class MediaKitDvrPlayer implements DvrPlayer {
     final player = Player(
       configuration: const PlayerConfiguration(
         logLevel: MPVLogLevel.error,
-        title: 'PokerCam DVR',
+        title: 'DVR',
       ),
     );
     final controller = VideoController(player);

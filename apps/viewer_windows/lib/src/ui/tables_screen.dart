@@ -80,6 +80,12 @@ class TablesScreen extends StatelessWidget {
         appBar: AppBar(
           title: Text(l10n.tablesTitle),
           actions: [
+            ValueListenableBuilder(
+              valueListenable: app.brand,
+              builder: (context, look, _) =>
+                  BrandLogo(logoUrl: look.logoUrl, height: 36),
+            ),
+            const SizedBox(width: 16),
             TextButton(
               key: const Key('sign-out'),
               onPressed: () => unawaited(app.signOut()),

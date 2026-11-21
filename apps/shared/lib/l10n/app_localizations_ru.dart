@@ -65,7 +65,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get pairingQrNotOurs => 'Это не QR-код привязки PokerCam.';
+  String get pairingQrNotOurs => 'Это не QR-код привязки камеры стола.';
 
   @override
   String get pairingReplaced =>
@@ -528,7 +528,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get errorNoServer =>
-      'По этому адресу нет сервера PokerCam. Проверьте адрес и порт: обычно http://адрес-сервера:8000.';
+      'По этому адресу не отвечает сервер камер. Проверьте адрес и порт: обычно http://адрес-сервера:8000.';
 
   @override
   String get sellerContactsTitle => 'Контакты продавца';

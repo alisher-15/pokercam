@@ -146,7 +146,7 @@ class PreflightCubit extends Cubit<PreflightState> {
         return;
       }
       licenseError = e.unreachable ? 'unreachable' : e.code;
-      sellerContacts = e.sellerContacts;
+      sellerContacts = e.sellerContacts ?? BuildBrand.sellerContacts;
     } finally {
       api.close();
     }

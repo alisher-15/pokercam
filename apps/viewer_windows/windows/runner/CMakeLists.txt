@@ -27,6 +27,11 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_MINOR=${FLUTT
 target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_PATCH=${FLUTTER_VERSION_PATCH}")
 target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_BUILD=${FLUTTER_VERSION_BUILD}")
 
+# The brand's names (SPEC 10.1), when tools/brand/brand.ts has written them; else neutral ones.
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/brand.h")
+  target_compile_definitions(${BINARY_NAME} PRIVATE "HAVE_BRAND_H")
+endif()
+
 # Disable Windows macros that collide with C++ standard library functions.
 target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")
 

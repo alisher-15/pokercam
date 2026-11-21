@@ -9,13 +9,15 @@ export $(shell sed -n 's/^\([A-Z_][A-Z0-9_]*\)=.*/\1/p' .env 2>/dev/null)
 PYTHON ?= python3.12
 VENV := backend/.venv
 APPS := apps/shared apps/camera_android apps/viewer_windows
+# White-label (SPEC 10.1): a folder in branding/.
+BRAND ?= default
 
 .PHONY: help setup setup-backend setup-node setup-apps dev down logs db keys seed acceptance acceptance-viewer acceptance-dvr load-test \
-	test test-contracts test-backend test-media-server test-apps \
+	brand build test test-contracts test-backend test-media-server test-tools test-apps \
 	lint lint-backend lint-media-server lint-tools lint-apps codegen l10n check-generated
 
 help: ## List the commands
-	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-20s %s\n", $$1, $$2}'
+	@grep -hE '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-20s %s\n", $$1, $$2}'
 
 setup: setup-backend setup-node setup-apps ## Install every component's dependencies
 
@@ -72,7 +74,13 @@ load-test: ## Against `make dev`: LOAD_TABLES × LOAD_VIEWERS bots for LOAD_MINU
 	cd tools && node load_test/index.ts --key "$$key" --tables $${LOAD_TABLES:-1} --viewers $${LOAD_VIEWERS:-1} \
 		--duration $${LOAD_MINUTES:-60} --server-container "$$container"
 
-test: db test-contracts test-backend test-media-server test-apps ## All tests of all components
+brand: ## Prepare the apps for BRAND (default: default): names, colors, logo, icons; `make brand` puts back the default
+	cd tools && node brand/brand.ts apply $(BRAND)
+
+build: ## Release builds of BRAND into build/brand/BRAND/: the camera APK, and on Windows the program's installer
+	cd tools && node brand/brand.ts build $(BRAND)
+
+test: db test-contracts test-backend test-media-server test-tools test-apps ## All tests of all components
 
 test-contracts:
 	cd contracts && npm test
@@ -82,6 +90,9 @@ test-backend:
 
 test-media-server:
 	cd media-server && npm test
+
+test-tools:
+	cd tools && node --test brand/brand.test.ts
 
 test-apps:
 	for app in $(APPS); do (cd $$app && flutter test) || exit 1; done

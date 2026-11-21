@@ -341,6 +341,7 @@ class _VideoAreaState extends State<_VideoArea> {
     final stream = state.stream;
     final blocked = state.phase == WatchPhase.blocked;
     final behind = !view.live && dvr != null && !blocked;
+    final contacts = state.sellerContacts ?? BuildBrand.sellerContacts;
     final grace = state.license == RoomLicenseStatus.GRACE
         ? state.graceUntil
         : null;
@@ -404,11 +405,11 @@ class _VideoAreaState extends State<_VideoArea> {
                       style: const TextStyle(color: Colors.white, fontSize: 18),
                     ),
                     // SPEC 8.4: blocked, the message and the seller's contacts.
-                    if (blocked && state.sellerContacts != null)
+                    if (blocked && contacts != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 16),
                         child: SellerContactsView(
-                          contacts: state.sellerContacts!,
+                          contacts: contacts,
                           color: Colors.white,
                         ),
                       ),
@@ -445,11 +446,11 @@ class _VideoAreaState extends State<_VideoArea> {
                             ),
                             style: const TextStyle(color: Colors.black),
                           ),
-                          if (state.sellerContacts != null)
+                          if (contacts != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 6),
                               child: SellerContactsView(
-                                contacts: state.sellerContacts!,
+                                contacts: contacts,
                                 color: Colors.black,
                               ),
                             ),

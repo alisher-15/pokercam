@@ -10,7 +10,7 @@ import { webRoute } from "../src/web.js";
 
 const log = createLogger("silent");
 const built = mkdtempSync(join(tmpdir(), "viewer-"));
-writeFileSync(join(built, "viewer.html"), "<!doctype html><title>PokerCam</title>");
+writeFileSync(join(built, "viewer.html"), "<!doctype html><title>Table viewer</title>");
 writeFileSync(join(built, "viewer.js"), "console.log('viewer');");
 const server = createHttpServer(log, undefined, [webRoute(built, log)]);
 const notBuilt = createHttpServer(log, undefined, [webRoute(join(built, "missing"), log)]);
@@ -34,7 +34,7 @@ test("the viewer page and its script are served, /viewer goes to /viewer/", asyn
   const page = await fetch(`${String(url)}/viewer/`);
   expect(page.status).toBe(200);
   expect(page.headers.get("content-type")).toBe("text/html; charset=utf-8");
-  expect(await page.text()).toContain("PokerCam");
+  expect(await page.text()).toContain("Table viewer");
   const script = await fetch(`${String(url)}/viewer/viewer.js?v=1`);
   expect(script.headers.get("content-type")).toBe("text/javascript; charset=utf-8");
   expect(await script.text()).toContain("viewer");
