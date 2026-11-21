@@ -997,6 +997,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'There is no PokerCam server at this address. Check the address and the port: usually http://server-address:8000.'**
   String get errorNoServer;
+
+  /// No description provided for @sellerContactsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Seller contacts'**
+  String get sellerContactsTitle;
+
+  /// No description provided for @sellerPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get sellerPhone;
+
+  /// No description provided for @sellerWhatsapp.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp'**
+  String get sellerWhatsapp;
+
+  /// No description provided for @sellerTelegram.
+  ///
+  /// In en, this message translates to:
+  /// **'Telegram'**
+  String get sellerTelegram;
+
+  /// No description provided for @sellerEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail'**
+  String get sellerEmail;
+
+  /// No description provided for @sellerWebsite.
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get sellerWebsite;
 }
 
 class _AppLocalizationsDelegate

@@ -18,15 +18,22 @@ void main() {
 
   tearDown(() => server.stop());
 
-  TableSession session({int tokenStatus = 200}) {
+  TableSession session({
+    int tokenStatus = 200,
+    String tokenError = 'access_revoked',
+    Map<String, dynamic>? sellerContacts,
+  }) {
     final api = fakeBackend(
       'http://backend',
       mediaUrl: server.url,
       tokenStatus: tokenStatus,
+      tokenError: tokenError,
+      sellerContacts: sellerContacts,
     );
     return TableSession(
       tableId: tableId,
       tokens: (id) => api.token('refresh', tableId: id),
+      brand: api.brand,
       subscriber: subscriber,
       log: JsonLog('viewer', sink: logs.add),
       statsEvery: const Duration(milliseconds: 50),
@@ -84,6 +91,27 @@ void main() {
     );
     await s.stop();
     await run;
+  });
+
+  test('the seller\'s contacts: from the brand once connected, from the license error when blocked (SPEC 8.4)', () async {
+    const contacts = {'phone': '+7 701 123 45 67', 'telegram': '@seller_kz'};
+    final live = session(sellerContacts: contacts);
+    final run = live.run();
+    await until(live, (st) => st.sellerContacts != null);
+    expect(live.state.sellerContacts?.telegram, '@seller_kz');
+    await live.stop();
+    await run;
+
+    final blocked = session(
+      tokenStatus: 403,
+      tokenError: 'license_expired',
+      sellerContacts: contacts,
+    );
+    final blockedRun = blocked.run();
+    await until(blocked, (st) => st.phase == WatchPhase.blocked);
+    expect(blocked.state.sellerContacts?.phone, '+7 701 123 45 67');
+    await blocked.stop();
+    await blockedRun;
   });
 
   test('camera.set completes with the camera\'s answer; the new state comes in camera.state', () async {

@@ -105,6 +105,14 @@ class TablesScreen extends StatelessWidget {
                         color: Theme.of(context).colorScheme.error,
                       ),
                     ),
+                    // SPEC 8.4: a license error says whom to call.
+                    subtitle: switch (state.error) {
+                      ApiException(:final sellerContacts?) => Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: SellerContactsView(contacts: sellerContacts),
+                      ),
+                      _ => null,
+                    },
                     trailing: TextButton(
                       onPressed: () =>
                           unawaited(context.read<TablesCubit>().load()),

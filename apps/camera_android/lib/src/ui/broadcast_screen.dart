@@ -142,7 +142,11 @@ class BroadcastScreen extends StatelessWidget {
       if (state.phase == SessionPhase.reconnecting)
         _Banner(l10n.bannerNoConnection, critical: true),
       if (state.phase == SessionPhase.blocked)
-        _Banner(l10n.bannerLicenseBlocked, critical: true),
+        _Banner(
+          l10n.bannerLicenseBlocked,
+          critical: true,
+          contacts: state.sellerContacts,
+        ),
       if (state.license == RoomLicenseStatus.GRACE && state.graceUntil != null)
         _Banner(l10n.bannerLicenseGrace(date.format(state.graceUntil!))),
       for (final alert in state.banners)
@@ -244,17 +248,34 @@ class _Figures extends StatelessWidget {
 }
 
 class _Banner extends StatelessWidget {
-  const _Banner(this.text, {this.critical = false});
+  const _Banner(this.text, {this.critical = false, this.contacts});
 
   final String text;
   final bool critical;
+
+  /// SPEC 8.4: whom to call, under a blocked license.
+  final SellerContacts? contacts;
 
   @override
   Widget build(BuildContext context) => Card(
     color: critical ? Colors.red.shade700 : Colors.orange.shade700,
     child: Padding(
       padding: const EdgeInsets.all(10),
-      child: Text(text, style: const TextStyle(color: Colors.white)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(text, style: const TextStyle(color: Colors.white)),
+          if (contacts != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: SellerContactsView(
+                contacts: contacts!,
+                color: Colors.white,
+              ),
+            ),
+        ],
+      ),
     ),
   );
 }

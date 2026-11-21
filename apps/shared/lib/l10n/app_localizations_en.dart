@@ -530,4 +530,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errorNoServer =>
       'There is no PokerCam server at this address. Check the address and the port: usually http://server-address:8000.';
+
+  @override
+  String get sellerContactsTitle => 'Seller contacts';
+
+  @override
+  String get sellerPhone => 'Phone';
+
+  @override
+  String get sellerWhatsapp => 'WhatsApp';
+
+  @override
+  String get sellerTelegram => 'Telegram';
+
+  @override
+  String get sellerEmail => 'E-mail';
+
+  @override
+  String get sellerWebsite => 'Website';
 }

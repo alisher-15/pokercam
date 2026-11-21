@@ -31,6 +31,7 @@ class SessionState {
     this.stats,
     this.device,
     this.banners = const [],
+    this.sellerContacts,
   });
 
   final SessionPhase phase;
@@ -42,6 +43,9 @@ class SessionState {
   /// Alerts shown over the preview (overheating, low battery), as ARB keys.
   final List<Alert> banners;
 
+  /// Whom the club calls when blocked (SPEC 8.4), from the license error.
+  final SellerContacts? sellerContacts;
+
   SessionState copyWith({
     SessionPhase? phase,
     RoomLicenseStatus? license,
@@ -49,6 +53,7 @@ class SessionState {
     PublishStats? stats,
     DeviceSnapshot? device,
     List<Alert>? banners,
+    SellerContacts? sellerContacts,
   }) => SessionState(
     phase: phase ?? this.phase,
     license: license ?? this.license,
@@ -56,6 +61,7 @@ class SessionState {
     stats: stats ?? this.stats,
     device: device ?? this.device,
     banners: banners ?? this.banners,
+    sellerContacts: sellerContacts ?? this.sellerContacts,
   );
 }
 
@@ -211,6 +217,7 @@ class BroadcastSession {
           _state.copyWith(
             phase: SessionPhase.blocked,
             license: RoomLicenseStatus.BLOCKED,
+            sellerContacts: e.sellerContacts,
           ),
         );
       }

@@ -9,12 +9,20 @@ import '../wire.dart';
 
 /// A failed backend call: HTTP status and the `detail.code` of the error body (contracts/rest/error_response.json).
 class ApiException implements Exception {
-  const ApiException(this.status, this.code, [this.message = '']);
+  const ApiException(
+    this.status,
+    this.code, [
+    this.message = '',
+    this.sellerContacts,
+  ]);
 
   /// 0 when the server could not be reached at all.
   final int status;
   final String code;
   final String message;
+
+  /// On a license error: how the club reaches its seller (SPEC 8.4).
+  final SellerContacts? sellerContacts;
 
   bool get unreachable => status == 0;
 
@@ -112,6 +120,12 @@ class ApiClient {
         await _call('GET', '/license', accessToken: accessToken),
       );
 
+  /// The club's brand: name, colors, logo and the seller's contacts (SPEC 10.1, 8.4).
+  Future<BrandResponse> brand(String accessToken) async =>
+      BrandResponse.fromJson(
+        await _call('GET', '/brand', accessToken: accessToken),
+      );
+
   Future<Map<String, dynamic>> _call(
     String method,
     String path, {
@@ -153,10 +167,14 @@ class ApiClient {
     }
     final detail = json is Map<String, dynamic> ? json['detail'] : null;
     if (detail is Map<String, dynamic>) {
+      final contacts = detail['seller_contacts'];
       throw ApiException(
         response.statusCode,
         '${detail['code']}',
         '${detail['message'] ?? ''}',
+        contacts is Map<String, dynamic>
+            ? SellerContacts.fromJson(contacts)
+            : null,
       );
     }
     throw ApiException(response.statusCode, 'http_${response.statusCode}');

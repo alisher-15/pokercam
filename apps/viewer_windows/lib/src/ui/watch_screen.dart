@@ -73,6 +73,7 @@ class WatchCubit extends Cubit<WatchState> {
     final session = TableSession(
       tableId: table.id,
       tokens: (tableId) => api.token(connection.refreshToken, tableId: tableId),
+      brand: api.brand,
       subscriber: services.subscriber(),
       log: services.log,
       connect: services.connect,
@@ -402,6 +403,15 @@ class _VideoAreaState extends State<_VideoArea> {
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.white, fontSize: 18),
                     ),
+                    // SPEC 8.4: blocked, the message and the seller's contacts.
+                    if (blocked && state.sellerContacts != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: SellerContactsView(
+                          contacts: state.sellerContacts!,
+                          color: Colors.white,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -424,13 +434,26 @@ class _VideoAreaState extends State<_VideoArea> {
                       key: const Key('watch-grace'),
                       color: Colors.amber.shade700,
                       padding: const EdgeInsets.all(10),
-                      child: Text(
-                        l10n.bannerLicenseGrace(
-                          DateFormat.yMd(l10n.localeName)
-                              .add_Hm()
-                              .format(grace),
-                        ),
-                        style: const TextStyle(color: Colors.black),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.bannerLicenseGrace(
+                              DateFormat.yMd(l10n.localeName)
+                                  .add_Hm()
+                                  .format(grace),
+                            ),
+                            style: const TextStyle(color: Colors.black),
+                          ),
+                          if (state.sellerContacts != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: SellerContactsView(
+                                contacts: state.sellerContacts!,
+                                color: Colors.black,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   if (state.dvr != null && !blocked)

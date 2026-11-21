@@ -46,6 +46,8 @@ void main() {
     String? activationError,
     int activationStatus = 401,
     int tokenStatus = 200,
+    String tokenError = 'access_revoked',
+    Map<String, dynamic>? sellerContacts,
     FakePlayer? dvrPlayer,
   }) => Services(
     store: store,
@@ -57,6 +59,8 @@ void main() {
       activationError: activationError,
       activationStatus: activationStatus,
       tokenStatus: tokenStatus,
+      tokenError: tokenError,
+      sellerContacts: sellerContacts,
       sent: sent,
     ),
     connect: (url, id) => ControlSocket.connect(url, id, ping: null),
@@ -331,6 +335,25 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.byKey(const Key('watch-panel')), findsOneWidget);
     expect(find.byKey(const Key('table-1-open')), findsNothing);
+    await close(tester);
+  });
+
+  testWidgets('blocked: the message and whom to call (SPEC 8.4)', (
+    tester,
+  ) async {
+    store.value = connection;
+    await pump(
+      tester,
+      services(
+        tokenStatus: 403,
+        tokenError: 'license_expired',
+        sellerContacts: {'phone': '+7 701 123 45 67', 'note': '10:00-22:00'},
+      ),
+      initialTable: tableId,
+    );
+    await waitFor(tester, find.byKey(const Key('seller-contacts')));
+    expect(find.text('Phone: +7 701 123 45 67'), findsOneWidget);
+    expect(find.text('10:00-22:00'), findsOneWidget);
     await close(tester);
   });
 

@@ -21,6 +21,7 @@ class PreflightState {
     this.h264,
     this.license,
     this.licenseError,
+    this.sellerContacts,
   });
 
   final bool loading;
@@ -34,6 +35,9 @@ class PreflightState {
 
   /// The backend's error code when the license could not be read (`license_expired`, `unreachable`, …).
   final String? licenseError;
+
+  /// Whom the club calls in grace or when blocked (SPEC 8.4): from the brand or the license error.
+  final SellerContacts? sellerContacts;
 
   bool get licenseBlocked =>
       licenseError == 'license_expired' ||
@@ -124,10 +128,17 @@ class PreflightCubit extends Cubit<PreflightState> {
     }
     LicenseResponse? license;
     String? licenseError;
+    SellerContacts? sellerContacts;
     final api = services.api(pairing.apiUrl);
     try {
       final token = await api.token(pairing.refreshToken);
       license = await api.license(token.accessToken);
+      if (license.status == LicenseStatus.GRACE) {
+        sellerContacts = await api
+            .brand(token.accessToken)
+            .then<SellerContacts?>((b) => b.sellerContacts)
+            .catchError((Object _) => null);
+      }
     } on ApiException catch (e) {
       if (e.unauthorized) {
         api.close();
@@ -135,6 +146,7 @@ class PreflightCubit extends Cubit<PreflightState> {
         return;
       }
       licenseError = e.unreachable ? 'unreachable' : e.code;
+      sellerContacts = e.sellerContacts;
     } finally {
       api.close();
     }
@@ -157,6 +169,7 @@ class PreflightCubit extends Cubit<PreflightState> {
         h264: h264,
         license: license,
         licenseError: licenseError,
+        sellerContacts: sellerContacts,
       ),
     );
   }
@@ -278,6 +291,13 @@ class PreflightScreen extends StatelessWidget {
                         required: true,
                         l10n: l10n,
                       ),
+                      if (state.sellerContacts != null)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                          child: SellerContactsView(
+                            contacts: state.sellerContacts!,
+                          ),
+                        ),
                       const SizedBox(height: 16),
                       FilledButton.icon(
                         key: const Key('preflight-start'),

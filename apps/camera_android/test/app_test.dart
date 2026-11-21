@@ -44,7 +44,14 @@ ApiClient fakeBackend(String url, {String? pairError, String? licenseError}) =>
           if (licenseError != null) {
             return http.Response(
               jsonEncode({
-                'detail': {'code': licenseError, 'message': licenseError},
+                'detail': {
+                  'code': licenseError,
+                  'message': licenseError,
+                  'seller_contacts': {
+                    'phone': '+7 701 123 45 67',
+                    'whatsapp': '+7 701 765 43 21',
+                  },
+                },
               }),
               403,
             );
@@ -243,9 +250,11 @@ void main() {
           licenseError: 'license_expired',
         ),
       );
+      // The seller's contacts are selectable text, with scrollables of their own: scroll the screen's.
       await tester.scrollUntilVisible(
         find.byKey(const Key('preflight-start')),
         100,
+        scrollable: find.byType(Scrollable).first,
       );
       expect(
         tester
@@ -254,6 +263,9 @@ void main() {
         isNull,
       );
       expect(find.textContaining('blocked'), findsOneWidget);
+      // SPEC 8.4: and whom the club calls.
+      expect(find.text('Phone: +7 701 123 45 67'), findsOneWidget);
+      expect(find.text('WhatsApp: +7 701 765 43 21'), findsOneWidget);
     },
   );
 }

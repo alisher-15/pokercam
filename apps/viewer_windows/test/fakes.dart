@@ -281,9 +281,11 @@ ApiClient fakeBackend(
   String url, {
   required String mediaUrl,
   int tokenStatus = 200,
+  String tokenError = 'access_revoked',
   String? activationError,
   int activationStatus = 401,
   List<http.Request>? sent,
+  Map<String, dynamic>? sellerContacts,
 }) => ApiClient(
   url,
   client: MockClient((request) async {
@@ -291,7 +293,12 @@ ApiClient fakeBackend(
     final path = request.url.path;
     http.Response error(int status, String code) => http.Response(
       jsonEncode({
-        'detail': {'code': code, 'message': code},
+        'detail': {
+          'code': code,
+          'message': code,
+          if (code.startsWith('license_') && sellerContacts != null)
+            'seller_contacts': sellerContacts,
+        },
       }),
       status,
     );
@@ -309,13 +316,28 @@ ApiClient fakeBackend(
       );
     }
     if (path.endsWith('/auth/token')) {
-      if (tokenStatus != 200) return error(tokenStatus, 'access_revoked');
+      if (tokenStatus != 200) return error(tokenStatus, tokenError);
       return http.Response(
         jsonEncode({
           'access_token': 'access',
           'token_type': 'bearer',
           'expires_in': 43200,
           'media_url': mediaUrl,
+        }),
+        200,
+      );
+    }
+    if (path.endsWith('/brand')) {
+      return http.Response(
+        jsonEncode({
+          'app_name': 'Club cam',
+          'colors': {
+            'primary': '#112233',
+            'secondary': '#223344',
+            'background': '#000000',
+            'accent': '#FFCC00',
+          },
+          'seller_contacts': ?sellerContacts,
         }),
         200,
       );

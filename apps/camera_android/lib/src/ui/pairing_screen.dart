@@ -13,13 +13,21 @@ import '../store.dart';
 enum PairingError { code, tooMany, unreachable, license, notOurs, other }
 
 class PairingState {
-  const PairingState({this.busy = false, this.error, this.errorCode = ''});
+  const PairingState({
+    this.busy = false,
+    this.error,
+    this.errorCode = '',
+    this.sellerContacts,
+  });
 
   final bool busy;
   final PairingError? error;
 
   /// The server's error code, for [PairingError.other].
   final String errorCode;
+
+  /// With [PairingError.license]: whom the club calls (SPEC 8.4).
+  final SellerContacts? sellerContacts;
 }
 
 /// POST /device/pair with the code from the PC (SPEC 9.2); the result is this phone's refresh token.
@@ -62,7 +70,13 @@ class PairingCubit extends Cubit<PairingState> {
       );
     } on ApiException catch (e) {
       services.log.warn('pairing failed', {'code': e.code, 'status': e.status});
-      emit(PairingState(error: _error(e), errorCode: e.code));
+      emit(
+        PairingState(
+          error: _error(e),
+          errorCode: e.code,
+          sellerContacts: e.sellerContacts,
+        ),
+      );
     } on Object catch (e) {
       // Anything else (a malformed address, the phone's identity or secure storage failing) is shown as it is:
       // left uncaught it kept the screen on "pairing…" for ever.
@@ -138,6 +152,11 @@ class _PairingScreenState extends State<PairingScreen> {
                   _Banner(
                     key: const Key('pairing-error'),
                     text: _errorText(l10n, state),
+                  ),
+                if (state.sellerContacts != null)
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: SellerContactsView(contacts: state.sellerContacts!),
                   ),
                 if (state.busy)
                   Padding(

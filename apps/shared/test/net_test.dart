@@ -186,6 +186,28 @@ void main() {
       );
     });
 
+    test('a license error carries the seller\'s contacts (SPEC 8.4)', () async {
+      final api = ApiClient(
+        'http://h',
+        client: MockClient(
+          (_) async => http.Response(
+            '{"detail":{"code":"license_expired","message":"x",'
+            '"seller_contacts":{"phone":"+7 701 1","telegram":"@seller_kz"}}}',
+            403,
+          ),
+        ),
+      );
+      await expectLater(
+        api.token('rt', tableId: null),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.code, 'code', 'license_expired')
+              .having((e) => e.sellerContacts?.phone, 'phone', '+7 701 1')
+              .having((e) => e.sellerContacts?.telegram, 'tg', '@seller_kz'),
+        ),
+      );
+    });
+
     test('an unreachable server is status 0', () async {
       final api = ApiClient(
         'http://h',

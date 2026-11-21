@@ -88,6 +88,7 @@ class WatchState {
     this.controls = const {},
     this.alerts = const [],
     this.dvr,
+    this.sellerContacts,
   });
 
   final WatchPhase phase;
@@ -112,6 +113,9 @@ class WatchState {
   /// The table's DVR, once media-server has said it records (dvr.info): none for a camera without H.264.
   final DvrAccess? dvr;
 
+  /// Whom the club calls in grace or when blocked (SPEC 8.4): from the brand, or from the license error.
+  final SellerContacts? sellerContacts;
+
   WatchState copyWith({
     WatchPhase? phase,
     RoomLicenseStatus? license,
@@ -124,6 +128,7 @@ class WatchState {
     Map<CameraParam, CameraControl>? controls,
     List<AlertEntry>? alerts,
     DvrAccess? dvr,
+    SellerContacts? sellerContacts,
   }) => WatchState(
     phase: phase ?? this.phase,
     license: license ?? this.license,
@@ -142,6 +147,7 @@ class WatchState {
     controls: controls ?? this.controls,
     alerts: alerts ?? this.alerts,
     dvr: dvr ?? this.dvr,
+    sellerContacts: sellerContacts ?? this.sellerContacts,
   );
 }
 
@@ -167,6 +173,7 @@ class TableSession {
     this.ackTimeout = const Duration(seconds: 5),
     Backoff? backoff,
     Future<ControlSocket> Function(String url, String tableId)? connect,
+    this.brand,
   }) : _log = log.withContext({'table_id': tableId}),
        _backoff = backoff ?? Backoff(),
        _connect = connect ?? ControlSocket.connect;
@@ -176,6 +183,9 @@ class TableSession {
   /// An access token for this table and media-server's address (POST /auth/token with table_id).
   final Future<TokenResponse> Function(String tableId) tokens;
   final Subscriber subscriber;
+
+  /// The club's brand for an access token (GET /brand): the seller's contacts for grace and blocked.
+  final Future<BrandResponse> Function(String accessToken)? brand;
   final Duration statsEvery;
   final Duration blockedRetry;
   final Duration ackTimeout;
@@ -206,6 +216,18 @@ class TableSession {
   void _emit(WatchState state) {
     _state = state;
     if (!_states.isClosed) _states.add(state);
+  }
+
+  /// Once per connection: the seller's contacts may have changed in the admin panel.
+  Future<void> _loadBrand(String accessToken) async {
+    final load = brand;
+    if (load == null) return;
+    try {
+      final contacts = (await load(accessToken)).sellerContacts;
+      if (contacts != null) _emit(_state.copyWith(sellerContacts: contacts));
+    } on Object catch (e) {
+      log.warn('brand failed', {'error': '$e'});
+    }
   }
 
   /// The phase while connected, from what the room said last.
@@ -260,6 +282,7 @@ class TableSession {
     try {
       final token = await tokens(tableId);
       _token = token;
+      unawaited(_loadBrand(token.accessToken));
       final opened = await _connect(token.mediaUrl, tableId);
       socket = opened;
       // Listen before joining: the room's state (license, camera, its producer) follows join's reply at once.
@@ -296,6 +319,7 @@ class TableSession {
           _state.copyWith(
             phase: WatchPhase.blocked,
             license: RoomLicenseStatus.BLOCKED,
+            sellerContacts: e.sellerContacts,
           ),
         );
       }

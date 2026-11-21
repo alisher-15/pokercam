@@ -529,4 +529,22 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get errorNoServer =>
       'По этому адресу нет сервера PokerCam. Проверьте адрес и порт: обычно http://адрес-сервера:8000.';
+
+  @override
+  String get sellerContactsTitle => 'Контакты продавца';
+
+  @override
+  String get sellerPhone => 'Телефон';
+
+  @override
+  String get sellerWhatsapp => 'WhatsApp';
+
+  @override
+  String get sellerTelegram => 'Telegram';
+
+  @override
+  String get sellerEmail => 'E-mail';
+
+  @override
+  String get sellerWebsite => 'Сайт';
 }
