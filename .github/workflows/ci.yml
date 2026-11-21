@@ -93,7 +93,7 @@ jobs:
       - name: FFmpeg for the DVR tests
         run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg)
       - run: make lint-media-server lint-tools
-      - run: make test-media-server
+      - run: make test-media-server test-tools
       - run: cd media-server && npm run build
 
   apps:
