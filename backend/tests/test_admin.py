@@ -292,6 +292,34 @@ def test_brand_changes_are_audited(admin: TestClient, db: Session) -> None:
     assert audit_actions(db)[-2:] == ["brand.created", "brand.updated"]
 
 
+def test_brand_seller_contacts_are_saved_and_checked(admin: TestClient, db: Session) -> None:
+    fields = {
+        "app_name": "Club cam",
+        "android_application_id": "com.example.clubcam",
+        "primary": "#112233",
+        "secondary": "#223344",
+        "background": "#000000",
+        "accent": "#FFCC00",
+        "contact_phone": " +7 701 123 45 67 ",
+        "contact_website": "https://seller.kz",
+        "contact_email": "",
+    }
+    admin.post("/admin/brands", data=fields)
+    brand = db.scalar(select(Brand).where(Brand.app_name == "Club cam"))
+    assert brand.seller_contacts == {"phone": "+7 701 123 45 67", "website": "https://seller.kz"}
+    assert 'value="+7 701 123 45 67"' in admin.get("/admin/brands").text
+    # A website that is not a link is refused; clearing every field removes the contacts.
+    bad = admin.post(
+        "/admin/brands",
+        data=fields | {"brand_id": str(brand.id), "contact_website": "seller.kz"},
+        follow_redirects=False,
+    )
+    assert bad.headers["location"] == "/admin/brands?error=invalid_form"
+    admin.post("/admin/brands", data=fields | {"brand_id": str(brand.id), "contact_phone": "", "contact_website": ""})
+    db.refresh(brand)
+    assert brand.seller_contacts is None
+
+
 def test_invalid_brand_is_refused(admin: TestClient) -> None:
     fields = {
         "app_name": "X",

@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
+from .. import common
 
 
 class ApiError(BaseModel):
+    """
+    code and message; on license errors (license_expired, license_suspended, no_license) also seller_contacts, how the club reaches its seller (SPEC 8.4).
+    """
+
     model_config = ConfigDict(
         extra="forbid",
     )
@@ -14,6 +19,7 @@ class ApiError(BaseModel):
     Stable machine-readable code, e.g. pairing_code_expired.
     """
     message: str
+    seller_contacts: common.SellerContacts | None = None
 
 
 class ErrorResponse(BaseModel):
@@ -25,3 +31,6 @@ class ErrorResponse(BaseModel):
         extra="forbid",
     )
     detail: ApiError = Field(..., title="ApiError")
+    """
+    code and message; on license errors (license_expired, license_suspended, no_license) also seller_contacts, how the club reaches its seller (SPEC 8.4).
+    """

@@ -26,3 +26,4 @@ class BrandConfig(BaseModel):
     """
     File in the brand's folder, square, at least 1024x1024.
     """
+    seller_contacts: common.SellerContacts | None = None

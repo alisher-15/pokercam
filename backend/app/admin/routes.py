@@ -15,11 +15,13 @@ from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
+from pydantic import ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import SessionDep
 from app.config import get_settings
+from app.contracts.common import SellerContacts
 from app.models import AdminUser, AuditLog, Brand, Client, Device, License, PokerTable, Viewer
 from app.security import keyed_hash, new_activation_key, normalize_activation_key, verify_password
 from app.services import audit, licenses, media_server
@@ -414,18 +416,30 @@ def revoke_viewer(client_id: uuid.UUID, viewer_id: uuid.UUID, admin: AdminDep, s
 
 
 def _brand_form(
-    app_name: str, android_application_id: str, logo_url: str, colors: dict[str, str]
+    app_name: str,
+    android_application_id: str,
+    logo_url: str,
+    colors: dict[str, str],
+    contacts: dict[str, str] | None = None,
 ) -> dict[str, Any] | None:
     """Brand fields if valid (the rules of contracts/branding/brand_config.json), else None."""
     if not app_name.strip() or not re.fullmatch(r"[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+", android_application_id):
         return None
     if not all(re.fullmatch(r"#[0-9A-Fa-f]{6}", c) for c in colors.values()):
         return None
+    filled = {k: v.strip() for k, v in (contacts or {}).items() if v.strip()}
+    seller_contacts = None
+    if filled:
+        try:
+            seller_contacts = SellerContacts.model_validate(filled).model_dump(mode="json", exclude_none=True)
+        except ValidationError:
+            return None
     return {
         "app_name": app_name.strip(),
         "android_application_id": android_application_id,
         "logo_url": logo_url.strip() or None,
         "colors": colors,
+        "seller_contacts": seller_contacts,
     }
 
 
@@ -447,10 +461,24 @@ def save_brand(
     accent: Annotated[str, Form()],
     logo_url: Annotated[str, Form()] = "",
     brand_id: Annotated[uuid.UUID | None, Form()] = None,
+    contact_phone: Annotated[str, Form()] = "",
+    contact_whatsapp: Annotated[str, Form()] = "",
+    contact_telegram: Annotated[str, Form()] = "",
+    contact_email: Annotated[str, Form()] = "",
+    contact_website: Annotated[str, Form()] = "",
+    contact_note: Annotated[str, Form()] = "",
 ) -> Response:
     """Creates a brand, or updates `brand_id`."""
     colors = {"primary": primary, "secondary": secondary, "background": background, "accent": accent}
-    fields = _brand_form(app_name, android_application_id, logo_url, colors)
+    contacts = {
+        "phone": contact_phone,
+        "whatsapp": contact_whatsapp,
+        "telegram": contact_telegram,
+        "email": contact_email,
+        "website": contact_website,
+        "note": contact_note,
+    }
+    fields = _brand_form(app_name, android_application_id, logo_url, colors, contacts)
     if fields is None:
         return _back("/admin/brands", "invalid_form")
     if brand_id is None:
@@ -463,7 +491,15 @@ def save_brand(
         for key, value in fields.items():
             setattr(brand, key, value)
         action = "brand.updated"
-    _change(session, admin, action, "brand", brand.id, None, **{k: v for k, v in fields.items() if k != "colors"})
+    _change(
+        session,
+        admin,
+        action,
+        "brand",
+        brand.id,
+        None,
+        **{k: v for k, v in fields.items() if k not in ("colors", "seller_contacts")},
+    )
     return _back("/admin/brands")
 
 

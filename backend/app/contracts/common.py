@@ -100,3 +100,31 @@ class BrandColors(BaseModel):
     """
     Color as #RRGGBB.
     """
+
+
+class SellerContacts(BaseModel):
+    """
+    How a club reaches the seller of its system (SPEC 8.4: shown when the license is in grace or blocked). Every field is optional, at least one is set.
+    """
+
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    phone: str | None = Field(None, pattern="^\\+?[0-9][0-9 ()-]{2,30}$")
+    """
+    Phone number as dialled, e.g. +7 701 123 45 67.
+    """
+    whatsapp: str | None = Field(None, pattern="^\\+?[0-9][0-9 ()-]{2,30}$")
+    """
+    WhatsApp number.
+    """
+    telegram: str | None = Field(None, pattern="^@?[A-Za-z0-9_]{5,32}$")
+    """
+    Telegram username, with or without @.
+    """
+    email: str | None = Field(None, max_length=254, pattern="^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
+    website: str | None = Field(None, max_length=200, pattern="^https?://\\S+$")
+    note: str | None = Field(None, max_length=200, min_length=1)
+    """
+    Free text, e.g. working hours.
+    """

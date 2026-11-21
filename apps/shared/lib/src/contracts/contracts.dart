@@ -394,6 +394,7 @@ class BrandConfig {
 
   ///File in the brand's folder.
   final String logo;
+  final SellerContacts? sellerContacts;
   final String windowsAppId;
 
   BrandConfig({
@@ -402,6 +403,7 @@ class BrandConfig {
     required this.colors,
     required this.icon,
     required this.logo,
+    this.sellerContacts,
     required this.windowsAppId,
   });
 
@@ -411,6 +413,9 @@ class BrandConfig {
     colors: BrandColors.fromJson(json["colors"]),
     icon: json["icon"],
     logo: json["logo"],
+    sellerContacts: json["seller_contacts"] == null
+        ? null
+        : SellerContacts.fromJson(json["seller_contacts"]),
     windowsAppId: json["windows_app_id"],
   );
 
@@ -420,6 +425,7 @@ class BrandConfig {
     "colors": colors.toJson(),
     "icon": icon,
     "logo": logo,
+    "seller_contacts": sellerContacts?.toJson(),
     "windows_app_id": windowsAppId,
   };
 }
@@ -459,24 +465,80 @@ class BrandColors {
   };
 }
 
+///How a club reaches the seller of its system (SPEC 8.4: shown when the license is in grace
+///or blocked). Every field is optional, at least one is set.
+class SellerContacts {
+  final String? email;
+
+  ///Free text, e.g. working hours.
+  final String? note;
+
+  ///Phone number as dialled, e.g. +7 701 123 45 67.
+  final String? phone;
+
+  ///Telegram username, with or without @.
+  final String? telegram;
+  final String? website;
+
+  ///WhatsApp number.
+  final String? whatsapp;
+
+  SellerContacts({
+    this.email,
+    this.note,
+    this.phone,
+    this.telegram,
+    this.website,
+    this.whatsapp,
+  });
+
+  factory SellerContacts.fromJson(Map<String, dynamic> json) => SellerContacts(
+    email: json["email"],
+    note: json["note"],
+    phone: json["phone"],
+    telegram: json["telegram"],
+    website: json["website"],
+    whatsapp: json["whatsapp"],
+  );
+
+  Map<String, dynamic> toJson() => {
+    "email": email,
+    "note": note,
+    "phone": phone,
+    "telegram": telegram,
+    "website": website,
+    "whatsapp": whatsapp,
+  };
+}
+
 ///GET /api/v1/brand
 class BrandResponse {
   final String appName;
   final BrandColors colors;
   final String? logoUrl;
+  final SellerContacts? sellerContacts;
 
-  BrandResponse({required this.appName, required this.colors, this.logoUrl});
+  BrandResponse({
+    required this.appName,
+    required this.colors,
+    this.logoUrl,
+    this.sellerContacts,
+  });
 
   factory BrandResponse.fromJson(Map<String, dynamic> json) => BrandResponse(
     appName: json["app_name"],
     colors: BrandColors.fromJson(json["colors"]),
     logoUrl: json["logo_url"],
+    sellerContacts: json["seller_contacts"] == null
+        ? null
+        : SellerContacts.fromJson(json["seller_contacts"]),
   );
 
   Map<String, dynamic> toJson() => {
     "app_name": appName,
     "colors": colors.toJson(),
     "logo_url": logoUrl,
+    "seller_contacts": sellerContacts?.toJson(),
   };
 }
 
@@ -538,6 +600,8 @@ class DevicePairResponse {
 
 ///Body of every 4xx/5xx response.
 class ErrorResponse {
+  ///code and message; on license errors (license_expired, license_suspended, no_license) also
+  ///seller_contacts, how the club reaches its seller (SPEC 8.4).
   final ApiError detail;
 
   ErrorResponse({required this.detail});
@@ -548,17 +612,29 @@ class ErrorResponse {
   Map<String, dynamic> toJson() => {"detail": detail.toJson()};
 }
 
+///code and message; on license errors (license_expired, license_suspended, no_license) also
+///seller_contacts, how the club reaches its seller (SPEC 8.4).
 class ApiError {
   ///Stable machine-readable code, e.g. pairing_code_expired.
   final String code;
   final String message;
+  final SellerContacts? sellerContacts;
 
-  ApiError({required this.code, required this.message});
+  ApiError({required this.code, required this.message, this.sellerContacts});
 
-  factory ApiError.fromJson(Map<String, dynamic> json) =>
-      ApiError(code: json["code"], message: json["message"]);
+  factory ApiError.fromJson(Map<String, dynamic> json) => ApiError(
+    code: json["code"],
+    message: json["message"],
+    sellerContacts: json["seller_contacts"] == null
+        ? null
+        : SellerContacts.fromJson(json["seller_contacts"]),
+  );
 
-  Map<String, dynamic> toJson() => {"code": code, "message": message};
+  Map<String, dynamic> toJson() => {
+    "code": code,
+    "message": message,
+    "seller_contacts": sellerContacts?.toJson(),
+  };
 }
 
 ///PUT /api/v1/internal/tables/{id}/camera (media-server -> backend): the table's camera

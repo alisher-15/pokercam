@@ -6,5 +6,10 @@
     "secondary": "#1B1F24",
     "background": "#101418",
     "accent": "#E0B341"
+  },
+  "seller_contacts": {
+    "phone": "+7 701 123 45 67",
+    "telegram": "@democam_support",
+    "note": "Ежедневно 10:00–22:00"
   }
 }

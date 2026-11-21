@@ -101,12 +101,18 @@ def make_club(db: Session):
     """A client with its brand, license and tables; paid for a month unless told otherwise."""
 
     def make(
-        *, paid_until: datetime | None = None, suspended: bool = False, max_tables: int = 1, tables: int = 1
+        *,
+        paid_until: datetime | None = None,
+        suspended: bool = False,
+        max_tables: int = 1,
+        tables: int = 1,
+        seller_contacts: dict[str, str] | None = None,
     ) -> Club:
         brand = Brand(
             app_name="Test",
             android_application_id="com.example.test",
             colors={"primary": "#000000", "secondary": "#111111", "background": "#222222", "accent": "#333333"},
+            seller_contacts=seller_contacts,
         )
         key = new_activation_key()
         client = Client(name="Club", brand=brand, activation_key_hash=keyed_hash(normalize_activation_key(key)))

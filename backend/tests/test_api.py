@@ -267,6 +267,33 @@ def test_brand(client: TestClient, make_club) -> None:
     assert body["app_name"] == "Test"
     assert body["colors"]["primary"] == "#000000"
     assert "logo_url" not in body  # never null on the wire
+    assert "seller_contacts" not in body
+
+
+CONTACTS = {"phone": "+7 701 123 45 67", "telegram": "@seller_kz", "note": "10:00-22:00"}
+
+
+def test_brand_has_the_seller_contacts(client: TestClient, make_club) -> None:
+    club = make_club(seller_contacts=CONTACTS)
+    token = access_token(client, activate(client, club.key)["refresh_token"])
+    assert client.get("/api/v1/brand", headers=bearer(token)).json()["seller_contacts"] == CONTACTS
+
+
+def test_license_errors_carry_the_seller_contacts(client: TestClient, make_club) -> None:
+    """SPEC 8.4: blocked, a PC or phone gets no token, so the refusal itself says whom to call."""
+    for club in (
+        make_club(paid_until=datetime.now(UTC) - timedelta(days=4), seller_contacts=CONTACTS),
+        make_club(suspended=True, seller_contacts=CONTACTS),
+    ):
+        response = client.post(
+            "/api/v1/auth/token", json={"refresh_token": activate(client, club.key)["refresh_token"]}
+        )
+        assert response.status_code == 403
+        assert response.json()["detail"]["seller_contacts"] == CONTACTS
+    # Without contacts in the brand the error has none (and never a null).
+    bare = make_club(suspended=True)
+    response = client.post("/api/v1/auth/token", json={"refresh_token": activate(client, bare.key)["refresh_token"]})
+    assert "seller_contacts" not in response.json()["detail"]
 
 
 def test_api_needs_a_token(client: TestClient) -> None:

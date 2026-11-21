@@ -38,8 +38,9 @@ export interface BrandConfig {
     /**
      * File in the brand's folder.
      */
-    logo:           string;
-    windows_app_id: string;
+    logo:             string;
+    seller_contacts?: SellerContacts;
+    windows_app_id:   string;
 }
 
 export interface BrandColors {
@@ -62,12 +63,38 @@ export interface BrandColors {
 }
 
 /**
+ * How a club reaches the seller of its system (SPEC 8.4: shown when the license is in grace
+ * or blocked). Every field is optional, at least one is set.
+ */
+export interface SellerContacts {
+    email?: string;
+    /**
+     * Free text, e.g. working hours.
+     */
+    note?: string;
+    /**
+     * Phone number as dialled, e.g. +7 701 123 45 67.
+     */
+    phone?: string;
+    /**
+     * Telegram username, with or without @.
+     */
+    telegram?: string;
+    website?:  string;
+    /**
+     * WhatsApp number.
+     */
+    whatsapp?: string;
+}
+
+/**
  * GET /api/v1/brand
  */
 export interface BrandResponse {
-    app_name:  string;
-    colors:    BrandColors;
-    logo_url?: string;
+    app_name:         string;
+    colors:           BrandColors;
+    logo_url?:        string;
+    seller_contacts?: SellerContacts;
 }
 
 /**
@@ -93,15 +120,24 @@ export interface DevicePairResponse {
  * Body of every 4xx/5xx response.
  */
 export interface ErrorResponse {
+    /**
+     * code and message; on license errors (license_expired, license_suspended, no_license) also
+     * seller_contacts, how the club reaches its seller (SPEC 8.4).
+     */
     detail: ApiError;
 }
 
+/**
+ * code and message; on license errors (license_expired, license_suspended, no_license) also
+ * seller_contacts, how the club reaches its seller (SPEC 8.4).
+ */
 export interface ApiError {
     /**
      * Stable machine-readable code, e.g. pairing_code_expired.
      */
-    code:    string;
-    message: string;
+    code:             string;
+    message:          string;
+    seller_contacts?: SellerContacts;
 }
 
 /**

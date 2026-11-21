@@ -24,8 +24,12 @@
         },
         "message": {
           "type": "string"
+        },
+        "seller_contacts": {
+          "$ref": "../common.json#/definitions/SellerContacts"
         }
-      }
+      },
+      "description": "code and message; on license errors (license_expired, license_suspended, no_license) also seller_contacts, how the club reaches its seller (SPEC 8.4)."
     }
   }
 }

@@ -20,6 +20,9 @@
     },
     "colors": {
       "$ref": "../common.json#/definitions/BrandColors"
+    },
+    "seller_contacts": {
+      "$ref": "../common.json#/definitions/SellerContacts"
     }
   }
 }

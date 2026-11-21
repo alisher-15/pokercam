@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Request
 from sqlalchemy import select
@@ -46,20 +47,26 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
+def _contacts(session: SessionDep, client_id: uuid.UUID) -> dict[str, Any] | None:
+    """The seller contacts of the client's brand, for license errors (SPEC 8.4)."""
+    client = session.get(Client, client_id)
+    return client.brand.seller_contacts if client is not None else None
+
+
 def _license(session: SessionDep, client_id: uuid.UUID) -> License:
     license_ = session.scalar(select(License).where(License.client_id == client_id))
     if license_ is None:
-        raise ApiException(403, "no_license", "The client has no license")
+        raise ApiException(403, "no_license", "The client has no license", _contacts(session, client_id))
     return license_
 
 
 def _require_access(license_: License, now: datetime) -> LicenseStatus:
-    """Active or grace; anything else is the reason access is refused."""
+    """Active or grace; anything else is the reason access is refused, with the seller's contacts."""
     status = licenses.status(now, license_.paid_until, license_.suspended)
     if status == LicenseStatus.EXPIRED:
-        raise ApiException(403, "license_expired", "The license has expired")
+        raise ApiException(403, "license_expired", "The license has expired", license_.client.brand.seller_contacts)
     if status == LicenseStatus.SUSPENDED:
-        raise ApiException(403, "license_suspended", "The license is suspended")
+        raise ApiException(403, "license_suspended", "The license is suspended", license_.client.brand.seller_contacts)
     return status
 
 
@@ -256,5 +263,10 @@ def create_pairing_code(table_id: uuid.UUID, claims: ViewerDep, session: Session
 def get_brand(claims: ClaimsDep, session: SessionDep) -> BrandResponse:
     brand = session.get_one(Client, claims.client_id).brand
     return BrandResponse.model_validate(
-        {"app_name": brand.app_name, "logo_url": brand.logo_url, "colors": brand.colors}
+        {
+            "app_name": brand.app_name,
+            "logo_url": brand.logo_url,
+            "colors": brand.colors,
+            "seller_contacts": brand.seller_contacts,
+        }
     )

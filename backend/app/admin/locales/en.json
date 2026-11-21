@@ -86,5 +86,12 @@
   "viewers.activated_at": "Activated",
   "viewers.name": "Name",
   "viewers.none": "No computers.",
-  "viewers.title": "Computers"
+  "viewers.title": "Computers",
+  "brands.contacts": "Seller contacts (the club sees them in grace and when blocked)",
+  "brands.contact.phone": "Phone",
+  "brands.contact.whatsapp": "WhatsApp",
+  "brands.contact.telegram": "Telegram",
+  "brands.contact.email": "E-mail",
+  "brands.contact.website": "Website",
+  "brands.contact.note": "Note"
 }

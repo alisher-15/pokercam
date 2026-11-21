@@ -31,6 +31,8 @@ class Brand(Base):
     # BrandColors of contracts/common.json: primary, secondary, background, accent.
     colors: Mapped[dict[str, Any]]
     android_application_id: Mapped[str] = mapped_column(Text)
+    # SellerContacts of contracts/common.json: how its clubs reach the seller (SPEC 8.4).
+    seller_contacts: Mapped[dict[str, Any] | None]
     created_at: Mapped[datetime] = _created()
 
 

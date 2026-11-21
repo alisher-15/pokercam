@@ -17,3 +17,4 @@ class BrandResponse(BaseModel):
     app_name: str = Field(..., max_length=50, min_length=1)
     logo_url: str | None = Field(None, min_length=1)
     colors: common.BrandColors
+    seller_contacts: common.SellerContacts | None = None

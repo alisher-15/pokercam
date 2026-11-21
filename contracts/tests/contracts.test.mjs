@@ -101,6 +101,18 @@ describe("invalid messages are rejected", () => {
     ],
     "pairing code of 5 digits": ["rest/device_pair_request.json", { ...readJson("examples/rest/device_pair_request.json"), code: "12345" }],
     "envelope with a bad type": ["ws/envelope.json", { ...base, type: "Camera Set" }],
+    "seller contacts with nothing in them": [
+      "rest/brand_response.json",
+      { ...readJson("examples/rest/brand_response.json"), seller_contacts: {} },
+    ],
+    "seller website that is not a link": [
+      "rest/brand_response.json",
+      { ...readJson("examples/rest/brand_response.json"), seller_contacts: { website: "club.kz" } },
+    ],
+    "seller phone with letters": [
+      "rest/brand_response.json",
+      { ...readJson("examples/rest/brand_response.json"), seller_contacts: { phone: "call me" } },
+    ],
   };
   for (const [name, [rel, data]] of Object.entries(cases)) {
     it(name, () => assert.equal(validate(rel, data).ok, false));

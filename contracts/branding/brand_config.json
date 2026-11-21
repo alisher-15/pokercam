@@ -38,6 +38,9 @@
       "type": "string",
       "pattern": "^[A-Za-z0-9_.-]+\\.png$",
       "description": "File in the brand's folder, square, at least 1024x1024."
+    },
+    "seller_contacts": {
+      "$ref": "../common.json#/definitions/SellerContacts"
     }
   }
 }

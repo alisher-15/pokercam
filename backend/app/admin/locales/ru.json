@@ -86,5 +86,12 @@
   "viewers.activated_at": "Активирован",
   "viewers.name": "Имя",
   "viewers.none": "Компьютеров нет.",
-  "viewers.title": "Компьютеры"
+  "viewers.title": "Компьютеры",
+  "brands.contacts": "Контакты продавца (видны клубу при отсрочке и блокировке)",
+  "brands.contact.phone": "Телефон",
+  "brands.contact.whatsapp": "WhatsApp",
+  "brands.contact.telegram": "Telegram",
+  "brands.contact.email": "E-mail",
+  "brands.contact.website": "Сайт",
+  "brands.contact.note": "Примечание"
 }

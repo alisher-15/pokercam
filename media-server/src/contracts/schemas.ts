@@ -172,6 +172,46 @@ export const schemas: Record<string, object> = {
             "description": "Color as #RRGGBB."
           }
         }
+      },
+      "SellerContacts": {
+        "title": "SellerContacts",
+        "description": "How a club reaches the seller of its system (SPEC 8.4: shown when the license is in grace or blocked). Every field is optional, at least one is set.",
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+?[0-9][0-9 ()-]{2,30}$",
+            "description": "Phone number as dialled, e.g. +7 701 123 45 67."
+          },
+          "whatsapp": {
+            "type": "string",
+            "pattern": "^\\+?[0-9][0-9 ()-]{2,30}$",
+            "description": "WhatsApp number."
+          },
+          "telegram": {
+            "type": "string",
+            "pattern": "^@?[A-Za-z0-9_]{5,32}$",
+            "description": "Telegram username, with or without @."
+          },
+          "email": {
+            "type": "string",
+            "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+            "maxLength": 254
+          },
+          "website": {
+            "type": "string",
+            "pattern": "^https?://\\S+$",
+            "maxLength": 200
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Free text, e.g. working hours."
+          }
+        }
       }
     }
   },
@@ -263,6 +303,9 @@ export const schemas: Record<string, object> = {
         "type": "string",
         "pattern": "^[A-Za-z0-9_.-]+\\.png$",
         "description": "File in the brand's folder, square, at least 1024x1024."
+      },
+      "seller_contacts": {
+        "$ref": "../common.json#/definitions/SellerContacts"
       }
     }
   },
@@ -288,6 +331,9 @@ export const schemas: Record<string, object> = {
       },
       "colors": {
         "$ref": "../common.json#/definitions/BrandColors"
+      },
+      "seller_contacts": {
+        "$ref": "../common.json#/definitions/SellerContacts"
       }
     }
   },
@@ -373,8 +419,12 @@ export const schemas: Record<string, object> = {
           },
           "message": {
             "type": "string"
+          },
+          "seller_contacts": {
+            "$ref": "../common.json#/definitions/SellerContacts"
           }
-        }
+        },
+        "description": "code and message; on license errors (license_expired, license_suspended, no_license) also seller_contacts, how the club reaches its seller (SPEC 8.4)."
       }
     }
   },

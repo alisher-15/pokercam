@@ -8,6 +8,13 @@
   {% for color in ['primary', 'secondary', 'background', 'accent'] %}
   <label>{{ t('brands.color.' ~ color) }} <input name="{{ color }}" type="color" value="{{ brand.colors[color] if brand else '#3F6E8C' }}"></label>
   {% endfor %}
+  <fieldset>
+    <legend>{{ t('brands.contacts') }}</legend>
+    {% set contacts = (brand.seller_contacts or {}) if brand else {} %}
+    {% for field, kind in [('phone', 'tel'), ('whatsapp', 'tel'), ('telegram', 'text'), ('email', 'email'), ('website', 'url'), ('note', 'text')] %}
+    <label>{{ t('brands.contact.' ~ field) }} <input name="contact_{{ field }}" type="{{ kind }}" value="{{ contacts.get(field, '') }}"></label>
+    {% endfor %}
+  </fieldset>
   <button>{{ t('common.save') if brand else t('brands.create') }}</button>
 </form>
 {% endmacro %}
