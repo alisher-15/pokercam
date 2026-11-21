@@ -12,7 +12,7 @@
 // - apps/shared/assets/brand/logo.png and the launcher/program icons (flutter_launcher_icons): the default
 //   brand's are committed, so `apply default` puts the repository back as it was.
 // Results land in build/brand/<brand>/.
-import { execFileSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -106,9 +106,19 @@ export function brandHeader(config: BrandConfig): string {
 
 function run(command: string, args: string[], cwd: string): void {
   console.log(`brand: ${command} ${args.join(" ")}  (in ${cwd})`);
-  // flutter and dart are .bat files on Windows: they need a shell there (ISCC is an .exe, its arguments go as is).
-  const script = command === "flutter" || command === "dart";
-  execFileSync(command, args, { cwd, stdio: "inherit", shell: WINDOWS && script });
+  // flutter and dart are .bat files on Windows: they need a shell there, and the shell gets one command line,
+  // so every argument is quoted (a user folder with a space in it). ISCC is an .exe: its arguments go as is.
+  if (WINDOWS && (command === "flutter" || command === "dart")) {
+    execSync([command, ...args].map(shellQuote).join(" "), { cwd, stdio: "inherit" });
+  } else {
+    execFileSync(command, args, { cwd, stdio: "inherit" });
+  }
+}
+
+/** One argument for cmd.exe: in double quotes when it has a space or a special character. */
+export function shellQuote(arg: string): string {
+  if (arg.includes('"')) throw new Error(`a quote in a build argument: ${arg}`);
+  return /^[A-Za-z0-9_\-.:/\\=]+$/.test(arg) ? arg : `"${arg}"`;
 }
 
 /** The icons from brand.json's icon: Android launcher icons, and the program's .ico on Windows. */

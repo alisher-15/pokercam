@@ -1,7 +1,7 @@
 // node --test brand/brand.test.ts
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { brandHeader, cString, defines, loadBrand } from "./brand.ts";
+import { brandHeader, cString, defines, loadBrand, shellQuote } from "./brand.ts";
 
 void describe("brands in branding/", () => {
   for (const name of ["default", "demo"]) {
@@ -55,5 +55,13 @@ void describe("C strings for Runner.rc and main.cpp", () => {
     const header = brandHeader(loadBrand("demo").config);
     assert.match(header, /#define BRAND_APP_NAME "TableGuard"/);
     assert.match(header, /#define BRAND_WINDOW_TITLE L"TableGuard"/);
+  });
+});
+
+void describe("the command line of flutter and dart on Windows", () => {
+  void it("quotes a path with a space, leaves a plain one as it is", () => {
+    assert.equal(shellQuote("C:\\Users\\Анна Ли\\pokercam\\build\\defines.json"), '"C:\\Users\\Анна Ли\\pokercam\\build\\defines.json"');
+    assert.equal(shellQuote("--dart-define-from-file=D:\\a\\b.json"), "--dart-define-from-file=D:\\a\\b.json");
+    assert.throws(() => shellQuote('a"b'), /quote/);
   });
 });
