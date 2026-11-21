@@ -49,3 +49,6 @@ app.*.map.json
 
 # The brand of the last build (tools/brand/brand.ts)
 /windows/runner/brand.h
+
+# Screens for the acceptance report (test_screens/)
+/test_screens/out/
