@@ -228,6 +228,12 @@ jobs:
             apps/camera_android/build/e2e-test.log
             apps/camera_android/build/harness.log
             apps/camera_android/build/logcat.txt
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: screens-android-e2e
+          path: apps/camera_android/build/screens/
+          if-no-files-found: ignore
       - if: failure()
         run: docker compose logs
 
@@ -313,6 +319,7 @@ jobs:
             $app = Start-Process (Join-Path $dir 'viewer_windows.exe') -PassThru
             Start-Sleep -Seconds 15
             if ($app.HasExited) { Write-Output "::error::$brand's program exited with $($app.ExitCode)"; exit 1 }
+            & tools/screens/capture.ps1 -Dir screens/installed -Prefix "$brand-"
             Write-Output "$brand : $($setup.Name) installed in $dir, the program runs ($([math]::Round($setup.Length / 1MB)) MB)"
             Stop-Process -Id $app.Id -Force
             Start-Sleep -Seconds 2
@@ -320,6 +327,13 @@ jobs:
             for ($i = 0; $i -lt 30 -and (Test-Path (Join-Path $dir 'viewer_windows.exe')); $i++) { Start-Sleep -Seconds 1 }
             if (Test-Path (Join-Path $dir 'viewer_windows.exe')) { Write-Output "::error::$brand did not uninstall"; exit 1 }
           }
+      # The acceptance report's pictures: each brand's program as installed, on the runner's desktop.
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: screens-windows-installed
+          path: screens/installed/
+          if-no-files-found: ignore
       # The zip as before, for unpacking without installing: the default brand's (built last).
       - run: |
           Compress-Archive -Path apps/viewer_windows/build/windows/x64/runner/Release/* -DestinationPath pokercam-viewer-windows.zip
@@ -431,11 +445,14 @@ jobs:
             $harness = Start-Process node -ArgumentList 'acceptance/stage6.ts','--key',$key,'--port','8766','--wait',$wait `
               -WorkingDirectory tools -RedirectStandardOutput "$logs/harness.log" -RedirectStandardError "$logs/harness.err.log" -PassThru
             Wait-Url http://127.0.0.1:8766/setup 90
+            # The desktop every 2 s while the app runs, for the acceptance report.
+            $shots = Start-Job -FilePath tools/screens/capture.ps1 -ArgumentList "$logs/screens/windows-e2e", "", 600, 2
             Push-Location apps/viewer_windows
             flutter test integration_test/e2e_test.dart -d windows --dart-define=E2E_HARNESS=http://127.0.0.1:8766 `
               --dart-define=SOAK_MINUTES=$env:SOAK_MINUTES --timeout=none --reporter expanded
             $app = $LASTEXITCODE
             Pop-Location
+            Stop-Job $shots; Receive-Job $shots
             $harness.WaitForExit(1000 * [int]$wait) | Out-Null
             Get-Content "$logs/harness.log"
             Write-Output "app test: $app, harness: $($harness.ExitCode)"
@@ -449,6 +466,12 @@ jobs:
             }
           }
           if ($failed) { exit 1 }
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: screens-windows-e2e
+          path: screens/windows-e2e/
+          if-no-files-found: ignore
 
   integration:
     name: Integration (docker compose)

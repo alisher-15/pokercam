@@ -20,6 +20,14 @@ adb logcat -G 16M >/dev/null 2>&1 || true
 done) &
 granter=$!
 
+# The phone's screen every 3 s while the test runs, for the acceptance report.
+mkdir -p build/screens
+(for i in $(seq -w 1 400); do
+  adb exec-out screencap -p > "build/screens/$i.png" 2>/dev/null || rm -f "build/screens/$i.png"
+  sleep 3
+done) &
+shots=$!
+
 (cd ../../tools && node acceptance/stage5.ts --key "$CLUB_KEY" --phone-api "http://$HOST_IP:8000" --port 8765) > build/harness.log 2>&1 &
 harness=$!
 
@@ -30,7 +38,7 @@ flutter test integration_test/e2e_test.dart -d emulator-5554 --dart-define=E2E_H
 app_status=${PIPESTATUS[0]}
 wait "$harness"
 harness_status=$?
-kill "$granter" 2>/dev/null
+kill "$granter" "$shots" 2>/dev/null
 adb logcat -d > build/logcat.txt 2>/dev/null
 echo "--- the app's log and errors (logcat) ---"
 grep -E 'flutter|Camera2Control|Camera2Session|CameraCapturer|Camera2Capturer|SurfaceTextureHelper|Camera2CameraImpl|CameraX|MobileScanner|AndroidRuntime|FATAL' \
