@@ -1,0 +1,4 @@
+# The spike only; nothing here goes into the apps or the servers.
+onnxruntime==1.32.0          # runs the ONNX model on the CPU (MIT)
+opencv-python-headless==5.1.0.95  # reads video and recording segments, draws the boxes (Apache-2.0)
+numpy==2.5.5                 # arrays for both (BSD)

@@ -81,8 +81,10 @@ export class BotFarm {
       ...(process.env.BOT_BROWSER_CHANNEL ? { channel: process.env.BOT_BROWSER_CHANNEL } : {}),
       ...(process.env.BOT_CHROMIUM_PATH ? { executablePath: process.env.BOT_CHROMIUM_PATH } : {}),
       args: [
-        // Chromium's own test camera: a moving pattern with a frame counter, at the size and rate asked for.
+        // Chromium's own test camera: a moving pattern with a frame counter, at the size and rate asked for;
+        // BOT_FAKE_VIDEO=<file.y4m or .mjpeg> plays that file instead, in a loop (e.g. cards on a table).
         "--use-fake-device-for-media-stream=fps=30",
+        ...(process.env.BOT_FAKE_VIDEO ? [`--use-file-for-fake-video-capture=${process.env.BOT_FAKE_VIDEO}`] : []),
         "--use-fake-ui-for-media-stream",
         "--autoplay-policy=no-user-gesture-required",
       ],
